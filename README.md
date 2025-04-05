@@ -5,6 +5,9 @@
 ---
 
 ## 目录
+
+语言：1.[中文]([TomatoTime/README.md at master · YoungLee-coder/TomatoTime](https://github.com/YoungLee-coder/TomatoTime/blob/master/README.md)) 2.[English]([TomatoTime/README_EN.md at master · YoungLee-coder/TomatoTime](https://github.com/YoungLee-coder/TomatoTime/blob/master/README_EN.md))
+
 1. [关于项目](#关于项目)
 2. [特性](#特性)
 3. [安装](#安装)
