@@ -17,6 +17,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
+  Color? _previousColor;
 
   @override
   void initState() {
@@ -126,326 +127,478 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
 
     String stateText;
     Color stateColor;
+    IconData stateIcon;
 
     switch (state) {
       case PomodoroState.focusing:
         stateText = '专注中';
         stateColor = Theme.of(context).colorScheme.primary;
+        stateIcon = Icons.timer;
         break;
       case PomodoroState.shortBreak:
         stateText = '短休息';
         stateColor = Theme.of(context).colorScheme.secondary;
+        stateIcon = Icons.coffee;
         break;
       case PomodoroState.longBreak:
         stateText = '长休息';
-        stateColor = Theme.of(context).colorScheme.secondary;
+        stateColor = Theme.of(context).colorScheme.tertiary;
+        stateIcon = Icons.weekend;
         break;
       case PomodoroState.paused:
         stateText = '已暂停';
         stateColor = Colors.orange;
+        stateIcon = Icons.pause_circle;
         break;
       default:
         stateText = '空闲';
         stateColor = Colors.grey;
+        stateIcon = Icons.hourglass_empty;
     }
 
+    // 保存当前颜色和之前颜色用于动画
+    Color beginColor =
+        _previousColor?.withOpacity(0.15) ?? stateColor.withOpacity(0.15);
+    _previousColor = stateColor;
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AnimatedAppBar(
         title: stateText,
         elevation: 0,
-        backgroundColor:
-            state == PomodoroState.paused
-                ? null // 暂停状态下使用默认背景色
-                : state == PomodoroState.focusing
-                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                : state == PomodoroState.shortBreak ||
-                    state == PomodoroState.longBreak
-                ? Theme.of(context).colorScheme.secondary.withOpacity(0.1)
-                : null,
+        backgroundColor: Colors.transparent,
+        foregroundColor: stateColor,
+        titleSpacing: 8,
+        leading: BackButton(color: stateColor),
       ),
-      body: AnimatedContainer(
+      body: TweenAnimationBuilder<Color?>(
+        tween: ColorTween(begin: beginColor, end: stateColor.withOpacity(0.15)),
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              state == PomodoroState.paused
-                  ? Theme.of(context)
-                      .colorScheme
-                      .background // 暂停状态下使用白色背景
-                  : state == PomodoroState.focusing
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                  : state == PomodoroState.shortBreak ||
-                      state == PomodoroState.longBreak
-                  ? Theme.of(context).colorScheme.secondary.withOpacity(0.1)
-                  : Theme.of(context).colorScheme.background,
-              Theme.of(context).colorScheme.background,
-            ],
-          ),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 当前状态
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: stateColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      state == PomodoroState.focusing
-                          ? Icons.timer
-                          : state == PomodoroState.paused
-                          ? Icons.pause
-                          : Icons.coffee,
-                      color: stateColor,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      stateText,
-                      style: TextStyle(
-                        color: stateColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // 计时器
-              PomodoroTimer(
-                progress: progress,
-                timeRemaining: timeRemaining,
-                isRunning: state != PomodoroState.paused && isRunning,
-                progressColor:
-                    state == PomodoroState.focusing
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.secondary,
-                onStart:
-                    state == PomodoroState.paused
-                        ? () {
-                          pomodoroProvider.resume();
-                        }
-                        : null,
-                onPause:
-                    state != PomodoroState.paused && isRunning
-                        ? () {
-                          pomodoroProvider.pause();
-                        }
-                        : null,
-                onStop: () {
-                  _showStopConfirmationDialog(context, pomodoroProvider);
-                },
-              ),
-
-              const SizedBox(height: 32),
-
-              // 当前任务
-              if (currentTask != null) ...[
-                const Text(
-                  '当前任务',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-
-                Card(
-                  elevation: 1,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color:
-                                    currentTask.isCompleted
-                                        ? Colors.green
-                                        : currentTask.color,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                currentTask.title,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  decoration:
-                                      currentTask.isCompleted
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        if (currentTask.description.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            currentTask.description,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color:
-                                  Theme.of(context).textTheme.bodySmall?.color,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-
-                        const SizedBox(height: 12),
-
-                        // 番茄钟进度
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.timer_outlined,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${currentTask.completedPomodoros}/${currentTask.estimatedPomodoros}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium?.color,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value:
-                                      currentTask.estimatedPomodoros > 0
-                                          ? currentTask.completedPomodoros /
-                                              currentTask.estimatedPomodoros
-                                          : 0,
-                                  minHeight: 6,
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceVariant.withOpacity(0.3),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    currentTask.isCompleted
-                                        ? Colors.green
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+        builder: (context, color, child) {
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(color: color),
+            child: child,
+          );
+        },
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 计时器
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    margin: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: stateColor.withOpacity(0.2),
+                          blurRadius: 30,
+                          spreadRadius: 5,
                         ),
                       ],
                     ),
+                    child: PomodoroTimer(
+                      progress: progress,
+                      timeRemaining: timeRemaining,
+                      isRunning: state != PomodoroState.paused && isRunning,
+                      progressColor: stateColor,
+                      backgroundColor: Colors.white.withOpacity(0.15),
+                      size: MediaQuery.of(context).size.width * 0.8,
+                      onStart:
+                          state == PomodoroState.paused
+                              ? () {
+                                pomodoroProvider.resume();
+                              }
+                              : null,
+                      onPause:
+                          state != PomodoroState.paused && isRunning
+                              ? () {
+                                pomodoroProvider.pause();
+                              }
+                              : null,
+                      onStop: () {
+                        _showStopConfirmationDialog(context, pomodoroProvider);
+                      },
+                    ),
                   ),
-                ),
-              ] else ...[
-                const Text(
-                  '无关联任务',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '当前专注没有关联到任何任务',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).textTheme.bodySmall?.color,
-                  ),
-                ),
-              ],
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
-              // 专注信息
-              Card(
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildInfoItem(
-                            context,
-                            icon: Icons.timer,
-                            label: '专注时长',
-                            value: TimeFormatter.formatMinutes(
-                              pomodoroProvider.settings.focusDuration,
-                            ),
+                  // 当前任务
+                  if (currentTask != null) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.assignment_outlined,
+                          size: 20,
+                          color: stateColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '当前任务',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
-                          _buildInfoItem(
-                            context,
-                            icon: Icons.coffee,
-                            label: '短休息',
-                            value: TimeFormatter.formatMinutes(
-                              pomodoroProvider.settings.shortBreakDuration,
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 任务卡片
+                    Card(
+                      elevation: 4,
+                      shadowColor: stateColor.withOpacity(0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: stateColor.withOpacity(0.1),
+                          width: 1,
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildInfoItem(
-                            context,
-                            icon: Icons.weekend,
-                            label: '长休息',
-                            value: TimeFormatter.formatMinutes(
-                              pomodoroProvider.settings.longBreakDuration,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withOpacity(0.9),
+                              Colors.white.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        currentTask.isCompleted
+                                            ? Colors.green
+                                            : currentTask.color,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: (currentTask.isCompleted
+                                                ? Colors.green
+                                                : currentTask.color)
+                                            .withOpacity(0.4),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    currentTask.title,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      decoration:
+                                          currentTask.isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
+
+                            if (currentTask.description.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                currentTask.description,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+
+                            const SizedBox(height: 16),
+
+                            // 番茄钟进度
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: stateColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.timer_outlined,
+                                    size: 14,
+                                    color: stateColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '完成进度',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.8),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '${currentTask.completedPomodoros}/${currentTask.estimatedPomodoros}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        currentTask.isCompleted
+                                            ? Colors.green
+                                            : stateColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            // 进度条
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value:
+                                    currentTask.estimatedPomodoros > 0
+                                        ? currentTask.completedPomodoros /
+                                            currentTask.estimatedPomodoros
+                                        : 0,
+                                minHeight: 8,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceVariant.withOpacity(0.3),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  currentTask.isCompleted
+                                      ? Colors.green
+                                      : stateColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.assignment_late_outlined,
+                          size: 20,
+                          color: stateColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '无关联任务',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
-                          _buildInfoItem(
-                            context,
-                            icon: Icons.repeat,
-                            label: '长休息间隔',
-                            value:
-                                '${pomodoroProvider.settings.longBreakInterval} 个',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      elevation: 4,
+                      shadowColor: Colors.grey.withOpacity(0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: stateColor.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withOpacity(0.9),
+                              Colors.white.withOpacity(0.8),
+                            ],
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: stateColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.timer_outlined,
+                                color: stateColor,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                '当前专注没有关联到任何任务，您可以专心集中精力完成自由创作',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 32),
+
+                  // 专注信息
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 20, color: stateColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        '专注信息',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Card(
+                    elevation: 4,
+                    shadowColor: stateColor.withOpacity(0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: stateColor.withOpacity(0.1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withOpacity(0.9),
+                            Colors.white.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  icon: Icons.timer,
+                                  label: '专注时长',
+                                  value: TimeFormatter.formatMinutes(
+                                    pomodoroProvider.settings.focusDuration,
+                                  ),
+                                  color: stateColor,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  icon: Icons.coffee,
+                                  label: '短休息',
+                                  value: TimeFormatter.formatMinutes(
+                                    pomodoroProvider
+                                        .settings
+                                        .shortBreakDuration,
+                                  ),
+                                  color: stateColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  icon: Icons.weekend,
+                                  label: '长休息',
+                                  value: TimeFormatter.formatMinutes(
+                                    pomodoroProvider.settings.longBreakDuration,
+                                  ),
+                                  color: stateColor,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  icon: Icons.repeat,
+                                  label: '长休息间隔',
+                                  value:
+                                      '${pomodoroProvider.settings.longBreakInterval} 个',
+                                  color: stateColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // 底部操作按钮
+                  _buildActions(context, pomodoroProvider),
+                ],
               ),
-
-              const SizedBox(height: 32),
-
-              // 底部操作按钮
-              _buildActions(context, pomodoroProvider),
-            ],
+            ),
           ),
         ),
       ),
@@ -457,24 +610,43 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     required IconData icon,
     required String label,
     required String value,
+    required Color color,
   }) {
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).textTheme.bodySmall?.color,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      height: 100,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 22, color: color),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -485,12 +657,35 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     required VoidCallback onPressed,
     Color? color,
   }) {
-    return TextButton.icon(
+    return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 20, color: color),
-      label: Text(label, style: TextStyle(color: color)),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      icon: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 500),
+        style: TextStyle(color: Colors.white),
+        child: Icon(icon, size: 18),
+      ),
+      label: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 500),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+        child: Text(label),
+      ),
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+          return color ?? Theme.of(context).colorScheme.primary;
+        }),
+        foregroundColor: MaterialStateProperty.all(Colors.white),
+        padding: MaterialStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        ),
+        minimumSize: MaterialStateProperty.all(const Size(120, 40)),
+        shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        elevation: MaterialStateProperty.all(2),
+        animationDuration: const Duration(milliseconds: 500),
       ),
     );
   }
