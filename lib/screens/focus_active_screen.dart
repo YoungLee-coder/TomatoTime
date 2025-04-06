@@ -478,7 +478,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
                     child: Text(
                       '专注不需要关联任务。您可以在结束后记录此次专注。',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Theme.of(
                           context,
                         ).colorScheme.onSurface.withOpacity(0.8),
@@ -536,8 +536,8 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
             ),
             child: Column(
               children: [
+                // 第一行信息（专注时长和短休息）
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: _buildInfoItem(
@@ -550,7 +550,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
                         color: stateColor,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: _buildInfoItem(
                         context,
@@ -564,9 +564,9 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                // 第二行信息（长休息和长休息间隔）
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: _buildInfoItem(
@@ -579,7 +579,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
                         color: stateColor,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: _buildInfoItem(
                         context,
@@ -674,7 +674,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
       curve: Curves.easeInOut,
       padding: const EdgeInsets.all(12),
       width: double.infinity,
-      height: 100,
+      height: 85,
       decoration: BoxDecoration(
         color:
             Theme.of(context).brightness == Brightness.dark
@@ -685,8 +685,8 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 22, color: color),
-          const SizedBox(height: 6),
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
@@ -695,7 +695,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             value,
             style: TextStyle(
@@ -717,39 +717,36 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     required VoidCallback onPressed,
     Color? color,
   }) {
-    // 固定按钮宽度
-    return SizedBox(
-      width: 150, // 固定宽度
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 500),
-          style: TextStyle(color: Colors.white),
-          child: Icon(icon, size: 18),
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 500),
+        style: TextStyle(color: Colors.white),
+        child: Icon(icon, size: 18),
+      ),
+      label: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 500),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
         ),
-        label: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 500),
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-          child: Text(label),
+        child: Text(label),
+      ),
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+          return color ?? Theme.of(context).colorScheme.primary;
+        }),
+        foregroundColor: MaterialStateProperty.all(Colors.white),
+        padding: MaterialStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
-        style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-            return color ?? Theme.of(context).colorScheme.primary;
-          }),
-          foregroundColor: MaterialStateProperty.all(Colors.white),
-          padding: MaterialStateProperty.all(
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          minimumSize: MaterialStateProperty.all(const Size(150, 45)),
-          shape: MaterialStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          elevation: MaterialStateProperty.all(2),
-          animationDuration: const Duration(milliseconds: 500),
+        minimumSize: MaterialStateProperty.all(const Size(0, 45)),
+        maximumSize: MaterialStateProperty.all(const Size(double.infinity, 50)),
+        shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
+        elevation: MaterialStateProperty.all(2),
+        animationDuration: const Duration(milliseconds: 500),
       ),
     );
   }
@@ -1023,34 +1020,55 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
 
     // 组织按钮为网格布局
     return Padding(
-      // 使用与卡片内容一致的内边距
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+      // 增加左右内边距，确保按钮不会太靠近屏幕边缘
+      padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 32.0),
       child: Column(
         children: [
           // 将按钮布局为两行，每行最多两个按钮
           if (actionButtons.isNotEmpty) ...[
             // 第一行按钮
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (actionButtons.length > 0) actionButtons[0],
-                if (actionButtons.length > 1) const SizedBox(width: 20), // 固定间距
-                if (actionButtons.length > 1) actionButtons[1],
+                if (actionButtons.length > 0)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: actionButtons[0],
+                    ),
+                  ),
+                if (actionButtons.length > 1)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: actionButtons[1],
+                    ),
+                  ),
               ],
             ),
 
             // 增加行之间的间距
-            const SizedBox(height: 20.0),
+            const SizedBox(height: 16.0),
 
             // 第二行按钮（如果有的话）
             if (actionButtons.length > 2)
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (actionButtons.length > 2) actionButtons[2],
+                  if (actionButtons.length > 2)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: actionButtons[2],
+                      ),
+                    ),
                   if (actionButtons.length > 3)
-                    const SizedBox(width: 20), // 固定间距
-                  if (actionButtons.length > 3) actionButtons[3],
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: actionButtons[3],
+                      ),
+                    ),
                 ],
               ),
           ],
