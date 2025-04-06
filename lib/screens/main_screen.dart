@@ -49,38 +49,47 @@ class _MainScreenState extends State<MainScreen> {
         },
         type: BottomNavigationBarType.fixed,
         items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.timer_outlined),
+            activeIcon: Icon(Icons.timer, size: 28),
             label: '首页',
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.task_outlined),
-            activeIcon: Icon(Icons.task),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.checklist_outlined),
+            activeIcon: Icon(Icons.checklist, size: 28),
             label: '任务',
           ),
           BottomNavigationBarItem(
             icon:
                 isRunning
                     ? _buildRunningIcon(context, state)
-                    : const Icon(Icons.bar_chart_outlined),
+                    : const Icon(Icons.insert_chart_outlined_rounded),
             activeIcon:
                 isRunning
-                    ? _buildRunningIcon(context, state)
-                    : const Icon(Icons.bar_chart),
+                    ? _buildRunningIcon(context, state, isActive: true)
+                    : const Icon(Icons.insert_chart_rounded, size: 28),
             label: '统计',
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.tune_outlined),
+            activeIcon: Icon(Icons.tune, size: 28),
             label: '设置',
           ),
         ],
+        elevation: 8,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withOpacity(0.6),
       ),
     );
   }
 
-  Widget _buildRunningIcon(BuildContext context, PomodoroState state) {
+  Widget _buildRunningIcon(
+    BuildContext context,
+    PomodoroState state, {
+    bool isActive = false,
+  }) {
     final color =
         state == PomodoroState.focusing
             ? Theme.of(context).colorScheme.primary
@@ -89,14 +98,26 @@ class _MainScreenState extends State<MainScreen> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        const Icon(Icons.bar_chart_outlined),
+        Icon(
+          isActive
+              ? Icons.insert_chart_rounded
+              : Icons.insert_chart_outlined_rounded,
+          size: isActive ? 28 : 24,
+        ),
         Positioned(
           top: 0,
           right: 0,
           child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                width: 1.5,
+              ),
+            ),
           ),
         ),
       ],
