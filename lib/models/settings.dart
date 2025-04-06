@@ -27,6 +27,7 @@ class PomodoroSettings {
   final bool notificationsEnabled; // 通知开关
   final AppThemeMode themeMode; // 主题模式
   final AppThemeColor themeColor; // 主题颜色
+  final bool keepScreenAwake;
 
   PomodoroSettings({
     this.focusDuration = 25,
@@ -40,6 +41,7 @@ class PomodoroSettings {
     this.notificationsEnabled = true,
     this.themeMode = AppThemeMode.system,
     this.themeColor = AppThemeColor.red,
+    this.keepScreenAwake = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -55,6 +57,7 @@ class PomodoroSettings {
       'notificationsEnabled': notificationsEnabled,
       'themeMode': themeMode.index,
       'themeColor': themeColor.index,
+      'keepScreenAwake': keepScreenAwake,
     };
   }
 
@@ -79,6 +82,7 @@ class PomodoroSettings {
           map['themeColor'] != null
               ? AppThemeColor.values[map['themeColor']]
               : AppThemeColor.red,
+      keepScreenAwake: map['keepScreenAwake'] ?? false,
     );
   }
 
@@ -94,6 +98,7 @@ class PomodoroSettings {
     bool? notificationsEnabled,
     AppThemeMode? themeMode,
     AppThemeColor? themeColor,
+    bool? keepScreenAwake,
   }) {
     return PomodoroSettings(
       focusDuration: focusDuration ?? this.focusDuration,
@@ -107,6 +112,7 @@ class PomodoroSettings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       themeMode: themeMode ?? this.themeMode,
       themeColor: themeColor ?? this.themeColor,
+      keepScreenAwake: keepScreenAwake ?? this.keepScreenAwake,
     );
   }
 
@@ -132,6 +138,7 @@ class PomodoroSettings {
           json['themeColor'] != null
               ? AppThemeColor.values[json['themeColor'] as int]
               : AppThemeColor.red,
+      keepScreenAwake: json['keepScreenAwake'] as bool? ?? false,
     );
   }
 
@@ -149,6 +156,7 @@ class PomodoroSettings {
       'notificationsEnabled': notificationsEnabled,
       'themeMode': themeMode.index,
       'themeColor': themeColor.index,
+      'keepScreenAwake': keepScreenAwake,
     };
   }
 }

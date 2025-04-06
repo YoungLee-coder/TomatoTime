@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:vibration/vibration.dart';
+import 'package:flutter/services.dart';
 
 /// 振动服务类，负责管理应用内的振动功能
 class VibrationService {
   // 检查设备是否支持振动
+  // 注意：HapticFeedback没有直接的检查方法，所以默认假定设备支持
   Future<bool> hasVibrator() async {
     // Web平台不支持振动
     if (kIsWeb) {
@@ -11,14 +12,7 @@ class VibrationService {
       return false;
     }
 
-    try {
-      final hasVibratorDevice = await Vibration.hasVibrator() ?? false;
-      debugPrint('设备${hasVibratorDevice ? "支持" : "不支持"}振动');
-      return hasVibratorDevice;
-    } catch (e) {
-      debugPrint('检查振动器失败: $e');
-      return false;
-    }
+    return true;
   }
 
   // 触发简单振动
@@ -30,14 +24,8 @@ class VibrationService {
     }
 
     try {
-      final hasVibratorDevice = await hasVibrator();
-      if (!hasVibratorDevice) {
-        debugPrint('设备不支持振动，跳过');
-        return;
-      }
-
-      // 简单振动500毫秒
-      await Vibration.vibrate(duration: 500);
+      // 使用中等强度反馈
+      await HapticFeedback.mediumImpact();
       debugPrint('触发简单振动');
     } catch (e) {
       debugPrint('触发振动失败: $e');
@@ -53,16 +41,12 @@ class VibrationService {
     }
 
     try {
-      final hasVibratorDevice = await hasVibrator();
-      if (!hasVibratorDevice) {
-        debugPrint('设备不支持振动，跳过');
-        return;
-      }
-
-      // 使用特定模式振动，表示专注结束
-      // 参数含义: 等待时间(毫秒), 振动时间(毫秒), 等待时间, 振动时间...
-      final pattern = [0, 300, 100, 300, 100, 300];
-      await Vibration.vibrate(pattern: pattern);
+      // 使用多次振动模拟多种模式
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+      await HapticFeedback.heavyImpact();
       debugPrint('触发专注结束振动');
     } catch (e) {
       debugPrint('触发专注结束振动失败: $e');
@@ -78,34 +62,20 @@ class VibrationService {
     }
 
     try {
-      final hasVibratorDevice = await hasVibrator();
-      if (!hasVibratorDevice) {
-        debugPrint('设备不支持振动，跳过');
-        return;
-      }
-
-      // 使用特定模式振动，表示休息结束
-      final pattern = [0, 200, 100, 200];
-      await Vibration.vibrate(pattern: pattern);
+      // 使用两次振动模拟休息结束
+      await HapticFeedback.mediumImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+      await HapticFeedback.mediumImpact();
       debugPrint('触发休息结束振动');
     } catch (e) {
       debugPrint('触发休息结束振动失败: $e');
     }
   }
 
-  // 取消振动
+  // 取消振动 (HapticFeedback没有取消方法，此方法保留API兼容性)
   Future<void> cancel() async {
-    // Web平台不支持振动
-    if (kIsWeb) {
-      debugPrint('Web平台不支持振动，跳过');
-      return;
-    }
-
-    try {
-      await Vibration.cancel();
-      debugPrint('取消振动');
-    } catch (e) {
-      debugPrint('取消振动失败: $e');
-    }
+    // 在HapticFeedback中不需要执行任何操作
+    debugPrint('HapticFeedback没有取消方法');
+    return;
   }
 }

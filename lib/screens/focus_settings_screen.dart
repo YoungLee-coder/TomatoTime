@@ -23,6 +23,7 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
   bool _notificationsEnabled = true;
+  bool _keepScreenAwake = false;
   int? _selectedTaskId;
 
   @override
@@ -49,6 +50,7 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
       _soundEnabled = settings.soundEnabled;
       _vibrationEnabled = settings.vibrationEnabled;
       _notificationsEnabled = settings.notificationsEnabled;
+      _keepScreenAwake = settings.keepScreenAwake;
     });
 
     // 获取当前选中的任务（如果有）
@@ -206,6 +208,19 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
                     onChanged: (value) {
                       setState(() {
                         _autoStartPomodoros = value;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  ),
+
+                  // 保持屏幕常亮
+                  SwitchListTile(
+                    title: const Text('保持屏幕常亮'),
+                    subtitle: const Text('专注期间阻止屏幕自动关闭'),
+                    value: _keepScreenAwake,
+                    onChanged: (value) {
+                      setState(() {
+                        _keepScreenAwake = value;
                       });
                     },
                     contentPadding: EdgeInsets.zero,
@@ -569,6 +584,7 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
       soundEnabled: _soundEnabled,
       vibrationEnabled: _vibrationEnabled,
       notificationsEnabled: _notificationsEnabled,
+      keepScreenAwake: _keepScreenAwake,
     );
 
     // 设置当前任务

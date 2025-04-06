@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../providers/pomodoro_provider.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/pomodoro_timer.dart';
 import '../utils/time_formatter.dart';
 import '../widgets/animated_app_bar.dart';
@@ -43,6 +46,21 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
           Navigator.of(context).pop(); // 返回上一页（首页）
         }
       });
+
+      // 检查是否需要保持屏幕常亮
+      final settingsProvider = Provider.of<SettingsProvider>(
+        context,
+        listen: false,
+      );
+      if (settingsProvider.settings.keepScreenAwake) {
+        try {
+          // 使用WakelockPlus启用屏幕常亮
+          WakelockPlus.enable();
+          debugPrint('已启用屏幕常亮');
+        } catch (e) {
+          debugPrint('无法启用屏幕常亮: $e');
+        }
+      }
     });
   }
 
@@ -112,6 +130,14 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
 
   @override
   void dispose() {
+    // 释放屏幕常亮锁定
+    try {
+      // 使用WakelockPlus禁用屏幕常亮
+      WakelockPlus.disable();
+      debugPrint('已禁用屏幕常亮');
+    } catch (e) {
+      debugPrint('无法禁用屏幕常亮: $e');
+    }
     _animationController.dispose();
     super.dispose();
   }

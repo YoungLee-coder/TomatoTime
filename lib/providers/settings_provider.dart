@@ -40,8 +40,9 @@ class SettingsProvider with ChangeNotifier {
     bool? notificationsEnabled,
     AppThemeMode? themeMode,
     AppThemeColor? themeColor,
+    bool? keepScreenAwake,
   }) async {
-    final newSettings = _settings.copyWith(
+    _settings = _settings.copyWith(
       focusDuration: focusDuration,
       shortBreakDuration: shortBreakDuration,
       longBreakDuration: longBreakDuration,
@@ -53,9 +54,10 @@ class SettingsProvider with ChangeNotifier {
       notificationsEnabled: notificationsEnabled,
       themeMode: themeMode,
       themeColor: themeColor,
+      keepScreenAwake: keepScreenAwake,
     );
-
-    await updateSettings(newSettings);
+    await _settingsService.saveSettings(_settings);
+    notifyListeners();
   }
 
   // 更新主题模式
@@ -64,8 +66,17 @@ class SettingsProvider with ChangeNotifier {
   }
 
   // 更新主题颜色
-  Future<void> updateThemeColor(AppThemeColor themeColor) async {
-    await updateSetting(themeColor: themeColor);
+  void updateThemeColor(AppThemeColor themeColor) {
+    _settings = _settings.copyWith(themeColor: themeColor);
+    updateSetting();
+    notifyListeners();
+  }
+
+  // 更新屏幕常亮设置
+  void updateKeepScreenAwake(bool keepScreenAwake) {
+    _settings = _settings.copyWith(keepScreenAwake: keepScreenAwake);
+    updateSetting();
+    notifyListeners();
   }
 
   // 获取Flutter的ThemeMode

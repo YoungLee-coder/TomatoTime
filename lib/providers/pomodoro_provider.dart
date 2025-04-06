@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/pomodoro_history.dart';
 import '../models/settings.dart';
 import '../models/task.dart';
@@ -39,6 +42,9 @@ class PomodoroProvider with ChangeNotifier {
 
   PomodoroSettings _settings;
   DateTime? _startTime;
+  bool _isRunning = false;
+  double _progress = 0.0;
+  int _totalTime = 0;
 
   PomodoroProvider({
     required PomodoroSettings settings,
@@ -53,8 +59,7 @@ class PomodoroProvider with ChangeNotifier {
   bool get isRunning => _timer != null && _timer!.isActive;
   int get timeRemaining => _timeRemaining;
   int get initialTime => _initialTime;
-  double get progress =>
-      _initialTime > 0 ? 1.0 - (_timeRemaining / _initialTime) : 0.0;
+  double get progress => _progress;
   Task? get currentTask => _currentTask;
   PomodoroSettings get settings => _settings;
   bool get needRefreshTasks => _needRefreshTasks;
@@ -556,6 +561,17 @@ class PomodoroProvider with ChangeNotifier {
 
   // 开始计时器
   void _startTimer([BuildContext? context]) {
+    // 如果设置了屏幕常亮，则启用它
+    if (_settings.keepScreenAwake && !kIsWeb) {
+      try {
+        // 使用WakelockPlus保持屏幕常亮
+        WakelockPlus.enable();
+        debugPrint('已启用屏幕常亮');
+      } catch (e) {
+        debugPrint('无法启用屏幕常亮: $e');
+      }
+    }
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timeRemaining > 0) {
         _timeRemaining--;
@@ -572,6 +588,17 @@ class PomodoroProvider with ChangeNotifier {
 
   // 停止计时器
   void _stopTimer() {
+    // 如果启用了屏幕常亮，则解除它
+    if (_settings.keepScreenAwake && !kIsWeb) {
+      try {
+        // 使用WakelockPlus禁用屏幕常亮
+        WakelockPlus.disable();
+        debugPrint('已禁用屏幕常亮');
+      } catch (e) {
+        debugPrint('无法禁用屏幕常亮: $e');
+      }
+    }
+
     if (_timer != null && _timer!.isActive) {
       _timer!.cancel();
       _timer = null;

@@ -391,17 +391,44 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    // 对任务进行排序：未完成的排在前面
+    final sortedTasks = List<Task>.from(todayTasks);
+    sortedTasks.sort((a, b) {
+      // 优先排序条件：未完成的排在前面
+      if (a.isCompleted && !b.isCompleted) return 1;
+      if (!a.isCompleted && b.isCompleted) return -1;
+
+      // 如果完成状态相同，可以添加次要排序条件，例如按创建时间或名称
+      return a.title.compareTo(b.title);
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Text(
-            '今日待办',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          child: Row(
+            children: [
+              Text(
+                '今日待办',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              if (sortedTasks.isNotEmpty)
+                Text(
+                  '未完成: ${sortedTasks.where((task) => !task.isCompleted).length}/${sortedTasks.length}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+            ],
           ),
         ),
-        ...todayTasks.take(_isTaskListExpanded ? todayTasks.length : 3).map((
+        ...sortedTasks.take(_isTaskListExpanded ? sortedTasks.length : 3).map((
           task,
         ) {
           return TaskCard(
@@ -433,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }).toList(),
 
         // 展开/收起按钮，只有任务超过3个时才显示
-        if (todayTasks.length > 3)
+        if (sortedTasks.length > 3)
           TextButton.icon(
             onPressed: () {
               setState(() {
@@ -446,7 +473,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   : Icons.keyboard_arrow_down,
               size: 18,
             ),
-            label: Text(_isTaskListExpanded ? '收起' : '查看更多'),
+            label: Text(
+              _isTaskListExpanded ? '收起' : '查看更多 (${sortedTasks.length - 3})',
+            ),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               minimumSize: Size.zero,
