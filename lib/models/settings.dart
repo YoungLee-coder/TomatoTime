@@ -1,3 +1,20 @@
+// 定义深色模式选项的枚举
+enum AppThemeMode {
+  system, // 跟随系统
+  light, // 浅色
+  dark, // 深色
+}
+
+// 定义主题颜色选项的枚举
+enum AppThemeColor {
+  red, // 红色（番茄色）
+  blue, // 蓝色
+  green, // 绿色
+  purple, // 紫色
+  orange, // 橙色
+  teal, // 蓝绿色
+}
+
 class PomodoroSettings {
   final int focusDuration; // 专注时长（分钟）
   final int shortBreakDuration; // 短休息时长（分钟）
@@ -8,7 +25,8 @@ class PomodoroSettings {
   final bool soundEnabled; // 声音开关
   final bool vibrationEnabled; // 震动开关
   final bool notificationsEnabled; // 通知开关
-  final bool darkMode; // 暗黑模式
+  final AppThemeMode themeMode; // 主题模式
+  final AppThemeColor themeColor; // 主题颜色
 
   PomodoroSettings({
     this.focusDuration = 25,
@@ -20,7 +38,8 @@ class PomodoroSettings {
     this.soundEnabled = true,
     this.vibrationEnabled = true,
     this.notificationsEnabled = true,
-    this.darkMode = false,
+    this.themeMode = AppThemeMode.system,
+    this.themeColor = AppThemeColor.red,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,7 +53,8 @@ class PomodoroSettings {
       'soundEnabled': soundEnabled,
       'vibrationEnabled': vibrationEnabled,
       'notificationsEnabled': notificationsEnabled,
-      'darkMode': darkMode,
+      'themeMode': themeMode.index,
+      'themeColor': themeColor.index,
     };
   }
 
@@ -49,7 +69,16 @@ class PomodoroSettings {
       soundEnabled: map['soundEnabled'] ?? true,
       vibrationEnabled: map['vibrationEnabled'] ?? true,
       notificationsEnabled: map['notificationsEnabled'] ?? true,
-      darkMode: map['darkMode'] ?? false,
+      themeMode:
+          map['themeMode'] != null
+              ? AppThemeMode.values[map['themeMode']]
+              : (map['darkMode'] == true
+                  ? AppThemeMode.dark
+                  : AppThemeMode.light), // 兼容旧版本
+      themeColor:
+          map['themeColor'] != null
+              ? AppThemeColor.values[map['themeColor']]
+              : AppThemeColor.red,
     );
   }
 
@@ -63,7 +92,8 @@ class PomodoroSettings {
     bool? soundEnabled,
     bool? vibrationEnabled,
     bool? notificationsEnabled,
-    bool? darkMode,
+    AppThemeMode? themeMode,
+    AppThemeColor? themeColor,
   }) {
     return PomodoroSettings(
       focusDuration: focusDuration ?? this.focusDuration,
@@ -75,7 +105,8 @@ class PomodoroSettings {
       soundEnabled: soundEnabled ?? this.soundEnabled,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      darkMode: darkMode ?? this.darkMode,
+      themeMode: themeMode ?? this.themeMode,
+      themeColor: themeColor ?? this.themeColor,
     );
   }
 
@@ -91,7 +122,16 @@ class PomodoroSettings {
       soundEnabled: json['soundEnabled'] as bool? ?? true,
       vibrationEnabled: json['vibrationEnabled'] as bool? ?? true,
       notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
-      darkMode: json['darkMode'] as bool? ?? false,
+      themeMode:
+          json['themeMode'] != null
+              ? AppThemeMode.values[json['themeMode'] as int]
+              : (json['darkMode'] == true
+                  ? AppThemeMode.dark
+                  : AppThemeMode.light), // 兼容旧版本
+      themeColor:
+          json['themeColor'] != null
+              ? AppThemeColor.values[json['themeColor'] as int]
+              : AppThemeColor.red,
     );
   }
 
@@ -107,7 +147,8 @@ class PomodoroSettings {
       'soundEnabled': soundEnabled,
       'vibrationEnabled': vibrationEnabled,
       'notificationsEnabled': notificationsEnabled,
-      'darkMode': darkMode,
+      'themeMode': themeMode.index,
+      'themeColor': themeColor.index,
     };
   }
 }

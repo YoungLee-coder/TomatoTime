@@ -8,6 +8,8 @@ import '../models/task.dart';
 import '../providers/task_provider.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
+import '../services/sound_service.dart';
+import '../services/vibration_service.dart';
 
 enum PomodoroState {
   idle, // 空闲状态
@@ -19,7 +21,9 @@ enum PomodoroState {
 
 class PomodoroProvider with ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService();
-  final NotificationService _notificationService = NotificationService();
+  final NotificationService _notificationService;
+  final SoundService _soundService = SoundService();
+  final VibrationService _vibrationService = VibrationService();
 
   PomodoroState _state = PomodoroState.idle;
   PomodoroState _previousActiveState = PomodoroState.idle; // 用于记录暂停前的状态
@@ -32,8 +36,16 @@ class PomodoroProvider with ChangeNotifier {
   bool _needRefreshTasks = false; // 标志是否需要刷新任务列表
   VoidCallback? _onReturnToHome; // 返回首页的回调函数
 
-  PomodoroSettings _settings = PomodoroSettings();
+  PomodoroSettings _settings;
   DateTime? _startTime;
+
+  PomodoroProvider({
+    required PomodoroSettings settings,
+    required NotificationService notificationService,
+  }) : _settings = settings,
+       _notificationService = notificationService {
+    _initializeServices();
+  }
 
   PomodoroState get state => _state;
   int get timeRemaining => _timeRemaining;
@@ -43,6 +55,7 @@ class PomodoroProvider with ChangeNotifier {
   PomodoroSettings get settings => _settings;
   bool get isRunning => _timer != null && _timer!.isActive;
   bool get needRefreshTasks => _needRefreshTasks;
+  NotificationService get notificationService => _notificationService;
 
   // 设置返回首页的回调
   void setReturnToHomeCallback(VoidCallback callback) {
@@ -120,6 +133,12 @@ class PomodoroProvider with ChangeNotifier {
       );
     }
 
+    // 根据设置播放开始提示音
+    if (_settings.soundEnabled) {
+      _soundService.playStartSound();
+      debugPrint('播放开始提示音');
+    }
+
     notifyListeners();
   }
 
@@ -141,6 +160,12 @@ class PomodoroProvider with ChangeNotifier {
       );
     }
 
+    // 根据设置播放开始提示音
+    if (_settings.soundEnabled) {
+      _soundService.playStartSound();
+      debugPrint('播放开始提示音');
+    }
+
     notifyListeners();
   }
 
@@ -160,6 +185,12 @@ class PomodoroProvider with ChangeNotifier {
         3,
         Duration(minutes: _settings.longBreakDuration),
       );
+    }
+
+    // 根据设置播放开始提示音
+    if (_settings.soundEnabled) {
+      _soundService.playStartSound();
+      debugPrint('播放开始提示音');
     }
 
     notifyListeners();
@@ -204,6 +235,12 @@ class PomodoroProvider with ChangeNotifier {
             Duration(seconds: _timeRemaining),
           );
         }
+      }
+
+      // 根据设置播放开始提示音
+      if (_settings.soundEnabled) {
+        _soundService.playStartSound();
+        debugPrint('播放开始提示音');
       }
 
       notifyListeners();
@@ -465,6 +502,17 @@ class PomodoroProvider with ChangeNotifier {
           _onReturnToHome!();
         }
       }
+
+      // 根据设置播放声音和触发振动
+      if (_settings.soundEnabled) {
+        _soundService.playCompletionSound();
+        debugPrint('播放专注完成提示音');
+      }
+
+      if (_settings.vibrationEnabled) {
+        _vibrationService.vibrateFocusEnd();
+        debugPrint('触发专注完成振动');
+      }
     } else if (_state == PomodoroState.shortBreak ||
         _state == PomodoroState.longBreak) {
       // 保存休息历史记录
@@ -503,6 +551,17 @@ class PomodoroProvider with ChangeNotifier {
         if (_onReturnToHome != null) {
           _onReturnToHome!();
         }
+      }
+
+      // 根据设置播放声音和触发振动
+      if (_settings.soundEnabled) {
+        _soundService.playCompletionSound();
+        debugPrint('播放休息完成提示音');
+      }
+
+      if (_settings.vibrationEnabled) {
+        _vibrationService.vibrateBreakEnd();
+        debugPrint('触发休息完成振动');
       }
     }
   }
@@ -621,5 +680,17 @@ class PomodoroProvider with ChangeNotifier {
 
       return monthlyStats;
     }
+  }
+
+  Future<void> _initializeServices() async {
+    await _soundService.init();
+    debugPrint('声音服务初始化完成');
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _soundService.dispose();
+    super.dispose();
   }
 }

@@ -1,15 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import '../models/settings.dart';
 
 class AppTheme {
-  // 主要颜色
-  static const Color primaryColor = Color(0xFFE53935); // 红色，番茄色
-  static const Color primaryLightColor = Color(0xFFFF6F60);
-  static const Color primaryDarkColor = Color(0xFFAB000D);
-  static const Color accentColor = Color(0xFF81C784); // 绿色，休息时的颜色
+  // 主题颜色映射表
+  static const Map<AppThemeColor, Color> themeColors = {
+    AppThemeColor.red: Color(0xFFE53935), // 红色，番茄色
+    AppThemeColor.blue: Color(0xFF1976D2), // 蓝色
+    AppThemeColor.green: Color(0xFF4CAF50), // 绿色
+    AppThemeColor.purple: Color(0xFF9C27B0), // 紫色
+    AppThemeColor.orange: Color(0xFFFF9800), // 橙色
+    AppThemeColor.teal: Color(0xFF009688), // 蓝绿色
+  };
+
+  // 获取当前主题颜色
+  static Color getPrimaryColor(AppThemeColor themeColor) {
+    return themeColors[themeColor] ?? themeColors[AppThemeColor.red]!;
+  }
+
+  // 获取当前主题浅色变体
+  static Color getPrimaryLightColor(AppThemeColor themeColor) {
+    // 浅色变体 - 根据主色生成
+    final Color baseColor = getPrimaryColor(themeColor);
+    return Color.lerp(baseColor, Colors.white, 0.3)!;
+  }
+
+  // 获取当前主题深色变体
+  static Color getPrimaryDarkColor(AppThemeColor themeColor) {
+    // 深色变体 - 根据主色生成
+    final Color baseColor = getPrimaryColor(themeColor);
+    return Color.lerp(baseColor, Colors.black, 0.2)!;
+  }
+
+  // 获取休息时的颜色（保持为绿色）
+  static const Color accentColor = Color(0xFF81C784);
 
   // 获取浅色主题
-  static ThemeData getLightTheme() {
+  static ThemeData getLightTheme({
+    AppThemeColor themeColor = AppThemeColor.red,
+  }) {
+    final primaryColor = getPrimaryColor(themeColor);
+    final primaryLightColor = getPrimaryLightColor(themeColor);
+
     return ThemeData(
       useMaterial3: true,
       primaryColor: primaryColor,
@@ -74,7 +106,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
+          side: BorderSide(color: primaryColor),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -98,7 +130,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor),
+          borderSide: BorderSide(color: primaryColor),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -135,7 +167,7 @@ class AppTheme {
         labelColor: primaryColor,
         unselectedLabelColor: Colors.grey.shade600,
         indicatorSize: TabBarIndicatorSize.tab,
-        indicator: const UnderlineTabIndicator(
+        indicator: UnderlineTabIndicator(
           borderSide: BorderSide(color: primaryColor, width: 2),
         ),
       ),
@@ -149,7 +181,7 @@ class AppTheme {
         tileColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -158,7 +190,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
       ),
-      cupertinoOverrideTheme: const CupertinoThemeData(
+      cupertinoOverrideTheme: CupertinoThemeData(
         primaryColor: primaryColor,
         barBackgroundColor: Colors.white,
         scaffoldBackgroundColor: Colors.white,
@@ -167,7 +199,13 @@ class AppTheme {
   }
 
   // 获取暗色主题
-  static ThemeData getDarkTheme() {
+  static ThemeData getDarkTheme({
+    AppThemeColor themeColor = AppThemeColor.red,
+  }) {
+    final primaryColor = getPrimaryColor(themeColor);
+    final primaryDarkColor = getPrimaryDarkColor(themeColor);
+    final primaryLightColor = getPrimaryLightColor(themeColor);
+
     return ThemeData(
       useMaterial3: true,
       primaryColor: primaryColor,
@@ -202,8 +240,8 @@ class AppTheme {
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF1E1E1E),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: const Color(0xFF1E1E1E),
         selectedItemColor: primaryLightColor,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
@@ -232,7 +270,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryLightColor,
-          side: const BorderSide(color: primaryLightColor),
+          side: BorderSide(color: primaryLightColor),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -256,7 +294,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryLightColor),
+          borderSide: BorderSide(color: primaryLightColor),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -289,7 +327,7 @@ class AppTheme {
         valueIndicatorColor: primaryLightColor,
         valueIndicatorTextStyle: const TextStyle(color: Colors.black),
       ),
-      tabBarTheme: const TabBarTheme(
+      tabBarTheme: TabBarTheme(
         labelColor: primaryLightColor,
         unselectedLabelColor: Colors.grey,
         indicatorSize: TabBarIndicatorSize.tab,
@@ -307,7 +345,7 @@ class AppTheme {
         tileColor: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -316,7 +354,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
       ),
-      cupertinoOverrideTheme: const CupertinoThemeData(
+      cupertinoOverrideTheme: CupertinoThemeData(
         primaryColor: primaryLightColor,
         barBackgroundColor: Color(0xFF1E1E1E),
         scaffoldBackgroundColor: Color(0xFF121212),
