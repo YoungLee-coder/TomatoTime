@@ -616,7 +616,14 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               pomodoroProvider,
               '开始短休息',
               '这将视为提前完成当前番茄钟，是否继续？',
-              () => pomodoroProvider.startShortBreak(context),
+              () async {
+                // 先提前完成当前番茄钟，确保统计正确记录
+                await pomodoroProvider.finishEarly(context);
+                // 如果上下文还有效，则开始短休息
+                if (context.mounted) {
+                  pomodoroProvider.startShortBreak(context);
+                }
+              },
             );
           },
         ),
@@ -634,7 +641,14 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               pomodoroProvider,
               '开始长休息',
               '这将视为提前完成当前番茄钟，是否继续？',
-              () => pomodoroProvider.startLongBreak(context),
+              () async {
+                // 先提前完成当前番茄钟，确保统计正确记录
+                await pomodoroProvider.finishEarly(context);
+                // 如果上下文还有效，则开始长休息
+                if (context.mounted) {
+                  pomodoroProvider.startLongBreak(context);
+                }
+              },
             );
           },
         ),

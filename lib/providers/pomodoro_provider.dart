@@ -35,6 +35,7 @@ class PomodoroProvider with ChangeNotifier {
   Task? _lastTask; // 保存最后一个任务的引用，用于自动开始下一个番茄钟
   bool _needRefreshTasks = false; // 标志是否需要刷新任务列表
   VoidCallback? _onReturnToHome; // 返回首页的回调函数
+  bool _manualStateChange = false; // 标志是否手动切换状态，用于控制自动开始休息的逻辑
 
   PomodoroSettings _settings;
   DateTime? _startTime;
@@ -142,6 +143,7 @@ class PomodoroProvider with ChangeNotifier {
 
   // 开始短休息
   void startShortBreak([BuildContext? context]) {
+    _manualStateChange = true; // 设置手动状态切换标志
     _stopTimer();
     _state = PomodoroState.shortBreak;
     _previousActiveState = PomodoroState.shortBreak;
@@ -164,11 +166,13 @@ class PomodoroProvider with ChangeNotifier {
       debugPrint('播放开始提示音');
     }
 
+    _manualStateChange = false; // 重置标志
     notifyListeners();
   }
 
   // 开始长休息
   void startLongBreak([BuildContext? context]) {
+    _manualStateChange = true; // 设置手动状态切换标志
     _stopTimer();
     _state = PomodoroState.longBreak;
     _previousActiveState = PomodoroState.longBreak;
@@ -191,6 +195,7 @@ class PomodoroProvider with ChangeNotifier {
       debugPrint('播放开始提示音');
     }
 
+    _manualStateChange = false; // 重置标志
     notifyListeners();
   }
 
@@ -316,7 +321,7 @@ class PomodoroProvider with ChangeNotifier {
       }
 
       // 根据设置决定下一步
-      if (_settings.autoStartBreaks) {
+      if (_settings.autoStartBreaks && !_manualStateChange) {
         // 根据完成的番茄钟数量决定是短休息还是长休息
         if (_completedPomodoros % _settings.longBreakInterval == 0) {
           startLongBreak();
