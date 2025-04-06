@@ -576,13 +576,29 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               context,
               icon: Icons.coffee,
               label: '短休息',
-              onPressed: pomodoroProvider.startShortBreak,
+              onPressed: () {
+                _showChangeStateConfirmDialog(
+                  context,
+                  pomodoroProvider,
+                  '开始短休息',
+                  '这将视为提前完成当前番茄钟，是否继续？',
+                  () => pomodoroProvider.startShortBreak(context),
+                );
+              },
             ),
             _buildActionButton(
               context,
               icon: Icons.weekend,
               label: '长休息',
-              onPressed: pomodoroProvider.startLongBreak,
+              onPressed: () {
+                _showChangeStateConfirmDialog(
+                  context,
+                  pomodoroProvider,
+                  '开始长休息',
+                  '这将视为提前完成当前番茄钟，是否继续？',
+                  () => pomodoroProvider.startLongBreak(context),
+                );
+              },
             ),
           ] else if (state == PomodoroState.shortBreak ||
               state == PomodoroState.longBreak) ...[
@@ -590,7 +606,15 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               context,
               icon: Icons.timer,
               label: '专注',
-              onPressed: pomodoroProvider.startFocus,
+              onPressed: () {
+                _showChangeStateConfirmDialog(
+                  context,
+                  pomodoroProvider,
+                  '开始专注',
+                  '这将提前结束休息直接进入下一个番茄钟，是否继续？',
+                  () => pomodoroProvider.startFocus(context),
+                );
+              },
             ),
           ],
 
@@ -607,6 +631,39 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
             ),
         ],
       ),
+    );
+  }
+
+  // 显示状态切换确认对话框
+  void _showChangeStateConfirmDialog(
+    BuildContext context,
+    PomodoroProvider pomodoroProvider,
+    String title,
+    String message,
+    VoidCallback onConfirm,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (BuildContext dialogContext) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // 关闭对话框
+                },
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // 关闭对话框
+                  onConfirm(); // 执行确认后的操作
+                },
+                child: const Text('确定'),
+              ),
+            ],
+          ),
     );
   }
 }
