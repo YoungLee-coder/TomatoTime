@@ -994,9 +994,53 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget _buildHistoryItem(PomodoroHistory item) {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     final task =
-        item.taskId != null
+        item.taskId != null && item.taskId != '0'
             ? taskProvider.getTaskById(int.parse(item.taskId!))
             : null;
+
+    // 根据状态确定显示内容
+    IconData itemIcon;
+    Color iconColor;
+    String statusText;
+    Color statusColor;
+
+    switch (item.status) {
+      case 'completed':
+        itemIcon = Icons.timer;
+        iconColor = Theme.of(context).colorScheme.primary;
+        statusText = '番茄钟已完成';
+        statusColor = Colors.green;
+        break;
+      case 'abandoned':
+        itemIcon = Icons.timer_off;
+        iconColor = Colors.red;
+        statusText = '番茄钟已放弃';
+        statusColor = Colors.red;
+        break;
+      case 'short_break_completed':
+        itemIcon = Icons.coffee;
+        iconColor = Theme.of(context).colorScheme.secondary;
+        statusText = '短休息完成';
+        statusColor = Colors.blue;
+        break;
+      case 'long_break_completed':
+        itemIcon = Icons.weekend;
+        iconColor = Theme.of(context).colorScheme.tertiary;
+        statusText = '长休息完成';
+        statusColor = Colors.purple;
+        break;
+      case 'break_completed':
+        itemIcon = Icons.coffee;
+        iconColor = Theme.of(context).colorScheme.secondary;
+        statusText = '休息完成';
+        statusColor = Colors.blue;
+        break;
+      default:
+        itemIcon = Icons.timer_off;
+        iconColor = Colors.orange;
+        statusText = '已中断';
+        statusColor = Colors.orange;
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -1015,11 +1059,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.timer,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                Icon(itemIcon, size: 20, color: iconColor),
                 const SizedBox(width: 8),
                 Text(
                   TimeFormatter.formatTime(item.startTime),
@@ -1049,13 +1089,10 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 ),
                 const Spacer(),
                 Text(
-                  item.status == 'completed' ? '已完成' : '已中断',
+                  statusText,
                   style: TextStyle(
                     fontSize: 12,
-                    color:
-                        item.status == 'completed'
-                            ? Colors.green
-                            : Colors.orange,
+                    color: statusColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

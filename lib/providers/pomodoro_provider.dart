@@ -366,24 +366,10 @@ class PomodoroProvider with ChangeNotifier {
       // 取消所有通知
       _notificationService.cancelAllNotifications();
 
-      // 记录休息完成历史
+      // 保存休息历史记录
       if (_startTime != null) {
-        try {
-          // 创建历史记录
-          final history = PomodoroHistory(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            startTime: _startTime!,
-            endTime: DateTime.now(),
-            duration: (_initialTime - _timeRemaining) ~/ 60, // 实际休息时长（分钟）
-            taskId: '0', // 休息没有关联任务
-            status: 'break_completed', // 标记为休息完成状态
-          );
-
-          await _databaseService.insertPomodoroHistory(history);
-          debugPrint('已保存休息提前结束历史');
-        } catch (e) {
-          debugPrint('保存休息历史失败: $e');
-        }
+        await _savePomodoroHistory();
+        debugPrint('已保存休息提前结束历史');
       }
 
       // 显示通知
@@ -508,20 +494,38 @@ class PomodoroProvider with ChangeNotifier {
     if (_startTime == null) return;
 
     try {
+      // 确定当前状态和记录状态
+      String status = 'completed';
+      String? taskId = _currentTask?.id?.toString();
+
+      // 根据状态设置不同的记录标记
+      if (_state == PomodoroState.shortBreak ||
+          (_state == PomodoroState.paused &&
+              _previousActiveState == PomodoroState.shortBreak)) {
+        status = 'short_break_completed';
+        taskId = '0'; // 休息没有关联任务
+      } else if (_state == PomodoroState.longBreak ||
+          (_state == PomodoroState.paused &&
+              _previousActiveState == PomodoroState.longBreak)) {
+        status = 'long_break_completed';
+        taskId = '0'; // 休息没有关联任务
+      }
+
       // 创建历史记录
       final history = PomodoroHistory(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         startTime: _startTime!,
         endTime: DateTime.now(),
-        duration: (_initialTime - _timeRemaining) ~/ 60, // 实际专注时长（分钟）
-        taskId: _currentTask?.id?.toString(),
-        status: 'completed',
+        duration: (_initialTime - _timeRemaining) ~/ 60, // 实际专注/休息时长（分钟）
+        taskId: taskId,
+        status: status,
       );
 
       await _databaseService.insertPomodoroHistory(history);
+      debugPrint('保存历史记录成功: 状态=${history.status}, 时长=${history.duration}分钟');
 
       // 如果是专注时间且关联了任务，增加任务的已完成番茄钟数
-      if (_state == PomodoroState.focusing && _currentTask != null) {
+      if (status == 'completed' && _currentTask != null) {
         int completedPomodoros = _currentTask!.completedPomodoros + 1;
         bool isCompleted =
             completedPomodoros >= _currentTask!.estimatedPomodoros;

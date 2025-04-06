@@ -7,7 +7,7 @@ class PomodoroHistory {
   final int duration; // 单位：分钟
   final String? taskId;
   final String
-  status; // 'completed', 'interrupted', 'abandoned', 'break_completed'
+  status; // 'completed', 'interrupted', 'abandoned', 'break_completed', 'short_break_completed', 'long_break_completed'
   final String? note;
 
   PomodoroHistory({
