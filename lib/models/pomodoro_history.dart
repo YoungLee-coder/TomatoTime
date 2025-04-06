@@ -6,7 +6,8 @@ class PomodoroHistory {
   final DateTime endTime;
   final int duration; // 单位：分钟
   final String? taskId;
-  final String status; // 'completed', 'interrupted', 'abandoned'
+  final String
+  status; // 'completed', 'interrupted', 'abandoned', 'break_completed'
   final String? note;
 
   PomodoroHistory({

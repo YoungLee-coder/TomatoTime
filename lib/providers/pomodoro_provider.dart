@@ -85,6 +85,11 @@ class PomodoroProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // 设置手动状态切换标志
+  void setManualStateChange(bool value) {
+    _manualStateChange = value;
+  }
+
   // 重置番茄钟状态
   void reset() {
     _stopTimer();
@@ -116,6 +121,7 @@ class PomodoroProvider with ChangeNotifier {
 
   // 开始专注
   void startFocus([BuildContext? context]) {
+    _manualStateChange = true; // 设置手动状态切换标志
     _stopTimer();
     _state = PomodoroState.focusing;
     _previousActiveState = PomodoroState.focusing;
@@ -138,6 +144,7 @@ class PomodoroProvider with ChangeNotifier {
       debugPrint('播放开始提示音');
     }
 
+    _manualStateChange = false; // 重置标志
     notifyListeners();
   }
 
@@ -328,7 +335,8 @@ class PomodoroProvider with ChangeNotifier {
         } else {
           startShortBreak();
         }
-      } else {
+      } else if (!_manualStateChange) {
+        // 只有在非手动状态切换时才设为空闲状态并返回首页
         _state = PomodoroState.idle;
         notifyListeners();
 
@@ -336,6 +344,77 @@ class PomodoroProvider with ChangeNotifier {
         if (_onReturnToHome != null) {
           _onReturnToHome!();
         }
+      } else {
+        // 手动状态切换时，只需要重置状态
+        _state = PomodoroState.idle;
+        notifyListeners();
+      }
+    }
+  }
+
+  // 提前结束休息
+  Future<void> finishBreakEarly(BuildContext? context) async {
+    // 只有在休息状态或暂停状态下才能提前结束休息
+    if ((_state == PomodoroState.shortBreak ||
+            _state == PomodoroState.longBreak) ||
+        (_state == PomodoroState.paused &&
+            (_previousActiveState == PomodoroState.shortBreak ||
+                _previousActiveState == PomodoroState.longBreak))) {
+      // 停止当前的计时器
+      _stopTimer();
+
+      // 取消所有通知
+      _notificationService.cancelAllNotifications();
+
+      // 记录休息完成历史
+      if (_startTime != null) {
+        try {
+          // 创建历史记录
+          final history = PomodoroHistory(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            startTime: _startTime!,
+            endTime: DateTime.now(),
+            duration: (_initialTime - _timeRemaining) ~/ 60, // 实际休息时长（分钟）
+            taskId: '0', // 休息没有关联任务
+            status: 'break_completed', // 标记为休息完成状态
+          );
+
+          await _databaseService.insertPomodoroHistory(history);
+          debugPrint('已保存休息提前结束历史');
+        } catch (e) {
+          debugPrint('保存休息历史失败: $e');
+        }
+      }
+
+      // 显示通知
+      if (_settings.notificationsEnabled) {
+        await _notificationService.showNotification(
+          id: 5,
+          title: '休息已结束',
+          body: '您已提前结束休息，可以开始新的专注了。',
+        );
+      }
+
+      // 根据设置决定下一步
+      if (_settings.autoStartPomodoros &&
+          _lastTask != null &&
+          !_manualStateChange) {
+        _startTime = null;
+        setCurrentTask(_lastTask); // 重新设置之前保存的任务
+        startFocus(); // 自动开始下一个番茄钟
+      } else if (!_manualStateChange) {
+        // 只有在非手动状态切换时才设为空闲状态并返回首页
+        _state = PomodoroState.idle;
+        notifyListeners();
+
+        // 调用返回首页回调
+        if (_onReturnToHome != null) {
+          _onReturnToHome!();
+        }
+      } else {
+        // 手动状态切换时，只需要重置状态
+        _state = PomodoroState.idle;
+        notifyListeners();
       }
     }
   }

@@ -529,12 +529,24 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     BuildContext context,
     PomodoroProvider pomodoroProvider,
   ) {
+    final state = pomodoroProvider.state;
+    final isBreakState =
+        state == PomodoroState.shortBreak ||
+        state == PomodoroState.longBreak ||
+        (state == PomodoroState.paused &&
+            (pomodoroProvider.previousActiveState == PomodoroState.shortBreak ||
+                pomodoroProvider.previousActiveState ==
+                    PomodoroState.longBreak));
+
+    final title = isBreakState ? '提前结束休息' : '提前结束';
+    final content = isBreakState ? '确定要提前结束当前休息吗？' : '确定要提前结束当前番茄钟吗？';
+
     showDialog(
       context: context,
       builder:
           (BuildContext dialogContext) => AlertDialog(
-            title: const Text('提前结束'),
-            content: const Text('确定要提前结束当前番茄钟吗？'),
+            title: Text(title),
+            content: Text(content),
             actions: [
               TextButton(
                 onPressed: () {
@@ -544,8 +556,14 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               ),
               TextButton(
                 onPressed: () async {
-                  // 等待提前结束操作完成，传递context参数
-                  await pomodoroProvider.finishEarly(context);
+                  // 根据状态调用不同的方法
+                  if (isBreakState) {
+                    // 休息状态调用finishBreakEarly
+                    await pomodoroProvider.finishBreakEarly(context);
+                  } else {
+                    // 专注状态调用finishEarly
+                    await pomodoroProvider.finishEarly(context);
+                  }
 
                   // 确保对话框上下文仍然有效
                   if (dialogContext.mounted) {
@@ -617,8 +635,12 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               '开始短休息',
               '这将视为提前完成当前番茄钟，是否继续？',
               () async {
+                // 设置手动状态切换标志
+                pomodoroProvider.setManualStateChange(true);
+
                 // 先提前完成当前番茄钟，确保统计正确记录
                 await pomodoroProvider.finishEarly(context);
+
                 // 如果上下文还有效，则开始短休息
                 if (context.mounted) {
                   pomodoroProvider.startShortBreak(context);
@@ -642,8 +664,12 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               '开始长休息',
               '这将视为提前完成当前番茄钟，是否继续？',
               () async {
+                // 设置手动状态切换标志
+                pomodoroProvider.setManualStateChange(true);
+
                 // 先提前完成当前番茄钟，确保统计正确记录
                 await pomodoroProvider.finishEarly(context);
+
                 // 如果上下文还有效，则开始长休息
                 if (context.mounted) {
                   pomodoroProvider.startLongBreak(context);
@@ -667,7 +693,18 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               pomodoroProvider,
               '开始专注',
               '这将提前结束休息直接进入下一个番茄钟，是否继续？',
-              () => pomodoroProvider.startFocus(context),
+              () async {
+                // 设置手动状态切换标志
+                pomodoroProvider.setManualStateChange(true);
+
+                // 提前结束休息
+                await pomodoroProvider.finishBreakEarly(context);
+
+                // 如果上下文还有效，则开始专注
+                if (context.mounted) {
+                  pomodoroProvider.startFocus(context);
+                }
+              },
             );
           },
         ),
