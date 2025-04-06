@@ -12,8 +12,11 @@ class UpdateService {
   static const String _backupApiUrl =
       'https://gitee.com/api/v5/repos/YoungLee-coder/TomatoTime/releases';
 
-  /// 当前应用版本
-  static const String currentVersion = 'v1.1';
+  /// 当前应用版本 (不含前缀)
+  static const String _currentVersion = '1.2';
+
+  /// 当前应用版本显示
+  static const String currentVersion = 'v1.2';
 
   /// 仓库发布页面URL
   static const String repoReleasesUrl =
@@ -92,24 +95,25 @@ class UpdateService {
 
       // 获取最新发布
       final latestRelease = releases.first;
-      final String latestVersion = latestRelease['tag_name'] ?? 'unknown';
+      final String? tagName = latestRelease['tag_name'];
 
-      // 清理版本号，移除前缀如"Release-"或"v"
-      final String cleanLatestVersion = latestVersion
-          .replaceAll('Release-', '')
-          .replaceAll('v', '');
-      final String cleanCurrentVersion = currentVersion
-          .replaceAll('Release-', '')
-          .replaceAll('v', '');
+      if (tagName == null) {
+        throw Exception('无法获取最新版本标签');
+      }
+
+      // 解析版本号 - 支持多种格式
+      final String latestVersionDisplay = tagName;
+      final String latestVersionClean = _cleanVersionNumber(tagName);
+      final String currentVersionClean = _currentVersion;
 
       // 比较版本号
       final bool hasUpdate =
-          _compareVersions(cleanLatestVersion, cleanCurrentVersion) > 0;
+          _compareVersions(latestVersionClean, currentVersionClean) > 0;
 
       return UpdateInfo(
         hasUpdate: hasUpdate,
-        message: hasUpdate ? '发现新版本：$latestVersion' : '当前已是最新版本',
-        latestVersion: latestVersion,
+        message: hasUpdate ? '发现新版本：$latestVersionDisplay' : '当前已是最新版本',
+        latestVersion: latestVersionDisplay,
         releaseUrl:
             latestRelease['html_url'] ??
             (isBackup ? backupRepoUrl : repoReleasesUrl),
@@ -119,6 +123,17 @@ class UpdateService {
       debugPrint('解析发布信息失败: $e');
       throw Exception('解析发布信息失败: $e');
     }
+  }
+
+  /// 清理版本号，移除所有非数字和点的前缀
+  /// 如 "v1.2.3", "Release-1.2.3", "version-1.2" 等都会被转换为 "1.2.3"
+  String _cleanVersionNumber(String version) {
+    // 使用正则表达式查找第一个数字，并从那里开始截取
+    final match = RegExp(r'(\d+(\.\d+)*)').firstMatch(version);
+    if (match != null) {
+      return match.group(1) ?? version;
+    }
+    return version;
   }
 
   /// 比较版本号

@@ -170,17 +170,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         () {
                           showAboutDialog(
                             context: context,
-                            applicationName: '番茄时间',
-                            applicationVersion: 'v1.1',
-                            applicationIcon: Image.asset(
-                              'assets/icon/app_icon.png',
-                              width: 48,
-                              height: 48,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.timer, size: 48);
-                              },
-                            ),
-                            applicationLegalese: '© 2025 YoungLee 保留所有权利',
+                            applicationIcon: const Icon(Icons.timer_outlined),
+                            applicationName: '专注番茄',
+                            applicationVersion: 'v1.2',
+                            applicationLegalese:
+                                '© ${DateTime.now().year} YoungLee',
                             children: const [
                               SizedBox(height: 16),
                               Text('一款简单好用的番茄工作法应用，帮助您提高工作效率和专注力。'),
@@ -207,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           children: [
                             Text(
-                              '版本 v1.1',
+                              '版本 v1.2',
                               style: TextStyle(
                                 fontSize: 12,
                                 color:
