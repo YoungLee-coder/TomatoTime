@@ -47,14 +47,18 @@ class PomodoroProvider with ChangeNotifier {
     _initializeServices();
   }
 
+  // getters
   PomodoroState get state => _state;
+  bool get isRunning => _timer != null && _timer!.isActive;
   int get timeRemaining => _timeRemaining;
   int get initialTime => _initialTime;
-  int get completedPomodoros => _completedPomodoros;
+  double get progress =>
+      _initialTime > 0 ? 1.0 - (_timeRemaining / _initialTime) : 0.0;
   Task? get currentTask => _currentTask;
   PomodoroSettings get settings => _settings;
-  bool get isRunning => _timer != null && _timer!.isActive;
   bool get needRefreshTasks => _needRefreshTasks;
+  PomodoroState get previousActiveState => _previousActiveState;
+  int get completedPomodoros => _completedPomodoros;
   NotificationService get notificationService => _notificationService;
 
   // 设置返回首页的回调
@@ -65,12 +69,6 @@ class PomodoroProvider with ChangeNotifier {
   // 重置任务刷新标志
   void resetRefreshTasksFlag() {
     _needRefreshTasks = false;
-  }
-
-  // 计算进度（0.0 - 1.0）
-  double get progress {
-    if (_initialTime == 0) return 0;
-    return 1.0 - (_timeRemaining / _initialTime);
   }
 
   void setSettings(PomodoroSettings settings) {
@@ -333,6 +331,69 @@ class PomodoroProvider with ChangeNotifier {
         if (_onReturnToHome != null) {
           _onReturnToHome!();
         }
+      }
+    }
+  }
+
+  // 放弃番茄钟
+  Future<void> abandonPomodoro(BuildContext? context) async {
+    // 只有在专注状态或暂停状态下才能放弃
+    if (_state == PomodoroState.focusing ||
+        (_state == PomodoroState.paused &&
+            _previousActiveState == PomodoroState.focusing)) {
+      // 停止当前的计时器
+      _stopTimer();
+
+      // 取消所有通知
+      _notificationService.cancelAllNotifications();
+
+      // 记录放弃的番茄钟历史（标记为放弃状态）
+      if (_startTime != null) {
+        try {
+          // 创建历史记录
+          final history = PomodoroHistory(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            startTime: _startTime!,
+            endTime: DateTime.now(),
+            duration: (_initialTime - _timeRemaining) ~/ 60, // 实际专注时长（分钟）
+            taskId: _currentTask?.id?.toString() ?? '0',
+            status: 'abandoned', // 标记为放弃状态
+          );
+
+          await _databaseService.insertPomodoroHistory(history);
+          debugPrint('已保存放弃的番茄钟历史');
+        } catch (e) {
+          debugPrint('保存放弃番茄钟历史失败: $e');
+        }
+      }
+
+      // 清除当前任务引用（注意：放弃番茄钟不会更新任务的完成状态）
+      Task? taskReference = _currentTask;
+      _currentTask = null;
+
+      // 如果提供了context且有关联任务，刷新任务列表
+      if (context != null && taskReference != null) {
+        final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+        await taskProvider.refreshTasks();
+        debugPrint('放弃番茄钟：已刷新任务列表');
+      }
+
+      // 显示通知
+      if (_settings.notificationsEnabled) {
+        await _notificationService.showNotification(
+          id: 4,
+          title: '已放弃番茄钟',
+          body: '您已放弃本次番茄钟，可以随时重新开始。',
+        );
+      }
+
+      // 设置为空闲状态
+      _state = PomodoroState.idle;
+      notifyListeners();
+
+      // 调用返回首页回调
+      if (_onReturnToHome != null) {
+        _onReturnToHome!();
       }
     }
   }

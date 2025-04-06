@@ -559,76 +559,190 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     );
   }
 
+  // 显示放弃番茄钟对话框
+  void _showAbandonDialog(
+    BuildContext context,
+    PomodoroProvider pomodoroProvider,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (BuildContext dialogContext) => AlertDialog(
+            title: const Text('放弃番茄钟'),
+            content: const Text('确定要放弃当前番茄钟吗？放弃后本次专注将不会计入完成记录。'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // 关闭对话框
+                },
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // 等待放弃番茄钟操作完成，传递context参数
+                  await pomodoroProvider.abandonPomodoro(context);
+
+                  // 确保对话框上下文仍然有效
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop(); // 关闭对话框
+                  }
+                },
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+    );
+  }
+
   // 构建底部操作按钮
   Widget _buildActions(
     BuildContext context,
     PomodoroProvider pomodoroProvider,
   ) {
     final state = pomodoroProvider.state;
+    final List<Widget> actionButtons = [];
 
+    // 根据状态添加不同按钮
+    if (state == PomodoroState.focusing) {
+      // 短休息按钮
+      actionButtons.add(
+        _buildActionButton(
+          context,
+          icon: Icons.coffee,
+          label: '短休息',
+          onPressed: () {
+            _showChangeStateConfirmDialog(
+              context,
+              pomodoroProvider,
+              '开始短休息',
+              '这将视为提前完成当前番茄钟，是否继续？',
+              () => pomodoroProvider.startShortBreak(context),
+            );
+          },
+        ),
+      );
+
+      // 长休息按钮
+      actionButtons.add(
+        _buildActionButton(
+          context,
+          icon: Icons.weekend,
+          label: '长休息',
+          onPressed: () {
+            _showChangeStateConfirmDialog(
+              context,
+              pomodoroProvider,
+              '开始长休息',
+              '这将视为提前完成当前番茄钟，是否继续？',
+              () => pomodoroProvider.startLongBreak(context),
+            );
+          },
+        ),
+      );
+    } else if (state == PomodoroState.shortBreak ||
+        state == PomodoroState.longBreak) {
+      // 专注按钮
+      actionButtons.add(
+        _buildActionButton(
+          context,
+          icon: Icons.timer,
+          label: '专注',
+          onPressed: () {
+            _showChangeStateConfirmDialog(
+              context,
+              pomodoroProvider,
+              '开始专注',
+              '这将提前结束休息直接进入下一个番茄钟，是否继续？',
+              () => pomodoroProvider.startFocus(context),
+            );
+          },
+        ),
+      );
+    }
+
+    // 仅在专注状态下显示提前结束和放弃番茄钟按钮
+    if (state == PomodoroState.focusing ||
+        (state == PomodoroState.paused &&
+            pomodoroProvider.previousActiveState == PomodoroState.focusing)) {
+      // 提前结束按钮
+      actionButtons.add(
+        _buildActionButton(
+          context,
+          icon: Icons.done_all,
+          label: '提前结束',
+          color: Theme.of(context).colorScheme.tertiary,
+          onPressed: () {
+            _showFinishEarlyDialog(context, pomodoroProvider);
+          },
+        ),
+      );
+
+      // 放弃番茄钟按钮
+      actionButtons.add(
+        _buildActionButton(
+          context,
+          icon: Icons.cancel_outlined,
+          label: '放弃番茄钟',
+          color: Colors.red,
+          onPressed: () {
+            _showAbandonDialog(context, pomodoroProvider);
+          },
+        ),
+      );
+    }
+    // 仅在休息状态下显示提前结束按钮
+    else if (state == PomodoroState.shortBreak ||
+        state == PomodoroState.longBreak ||
+        (state == PomodoroState.paused &&
+            (pomodoroProvider.previousActiveState == PomodoroState.shortBreak ||
+                pomodoroProvider.previousActiveState ==
+                    PomodoroState.longBreak))) {
+      // 提前结束按钮
+      actionButtons.add(
+        _buildActionButton(
+          context,
+          icon: Icons.done_all,
+          label: '提前结束',
+          color: Theme.of(context).colorScheme.tertiary,
+          onPressed: () {
+            _showFinishEarlyDialog(context, pomodoroProvider);
+          },
+        ),
+      );
+    }
+
+    // 组织按钮为网格布局
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
         children: [
-          if (state == PomodoroState.focusing) ...[
-            _buildActionButton(
-              context,
-              icon: Icons.coffee,
-              label: '短休息',
-              onPressed: () {
-                _showChangeStateConfirmDialog(
-                  context,
-                  pomodoroProvider,
-                  '开始短休息',
-                  '这将视为提前完成当前番茄钟，是否继续？',
-                  () => pomodoroProvider.startShortBreak(context),
-                );
-              },
+          // 第一行按钮 (最多2个)
+          if (actionButtons.isNotEmpty)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children:
+                  actionButtons.length == 1
+                      ? [actionButtons[0]]
+                      : [
+                        actionButtons[0],
+                        if (actionButtons.length > 1) actionButtons[1],
+                      ],
             ),
-            _buildActionButton(
-              context,
-              icon: Icons.weekend,
-              label: '长休息',
-              onPressed: () {
-                _showChangeStateConfirmDialog(
-                  context,
-                  pomodoroProvider,
-                  '开始长休息',
-                  '这将视为提前完成当前番茄钟，是否继续？',
-                  () => pomodoroProvider.startLongBreak(context),
-                );
-              },
-            ),
-          ] else if (state == PomodoroState.shortBreak ||
-              state == PomodoroState.longBreak) ...[
-            _buildActionButton(
-              context,
-              icon: Icons.timer,
-              label: '专注',
-              onPressed: () {
-                _showChangeStateConfirmDialog(
-                  context,
-                  pomodoroProvider,
-                  '开始专注',
-                  '这将提前结束休息直接进入下一个番茄钟，是否继续？',
-                  () => pomodoroProvider.startFocus(context),
-                );
-              },
+
+          // 如果有更多按钮，添加第二行
+          if (actionButtons.length > 2) ...[
+            const SizedBox(height: 8), // 行间距
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children:
+                  actionButtons.length == 3
+                      ? [actionButtons[2]]
+                      : [
+                        actionButtons[2],
+                        if (actionButtons.length > 3) actionButtons[3],
+                      ],
             ),
           ],
-
-          // 仅在非空闲状态下显示提前结束按钮
-          if (state != PomodoroState.idle)
-            _buildActionButton(
-              context,
-              icon: Icons.done_all,
-              label: '提前结束',
-              color: Theme.of(context).colorScheme.tertiary,
-              onPressed: () {
-                _showFinishEarlyDialog(context, pomodoroProvider);
-              },
-            ),
         ],
       ),
     );
