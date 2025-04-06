@@ -6,6 +6,8 @@ import '../providers/settings_provider.dart';
 import '../models/settings.dart';
 import '../models/user_profile.dart';
 import '../services/user_service.dart';
+import '../services/update_service.dart';
+import '../services/url_service.dart';
 import 'profile_edit_screen.dart';
 import 'backup_restore_screen.dart';
 import '../providers/task_provider.dart';
@@ -169,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           showAboutDialog(
                             context: context,
                             applicationName: '番茄时间',
-                            applicationVersion: '1.1',
+                            applicationVersion: 'Release-1.1',
                             applicationIcon: Image.asset(
                               'assets/icon/app_icon.png',
                               width: 48,
@@ -186,6 +188,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         },
                       ),
+                      _buildNavigationSettingCard(
+                        context,
+                        '检查更新',
+                        Icons.system_update_outlined,
+                        _checkForUpdates,
+                      ),
                     ]),
 
                     // 底部版权信息
@@ -199,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           children: [
                             Text(
-                              '版本 1.1',
+                              '版本 Release-1.1',
                               style: TextStyle(
                                 fontSize: 12,
                                 color:
@@ -578,6 +586,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  // 检查更新
+  void _checkForUpdates() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // 显示加载对话框
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('正在检查更新...'),
+              ],
+            ),
+          ),
+    );
+
+    try {
+      // 初始化更新服务并检查更新
+      final updateService = UpdateService();
+      final updateInfo = await updateService.checkForUpdates();
+
+      // 关闭加载对话框
+      if (mounted) {
+        Navigator.pop(context); // 关闭加载对话框
+      }
+
+      if (!mounted) return;
+
+      if (updateInfo.error) {
+        // 显示错误消息
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(updateInfo.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // 显示更新对话框
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: Text(updateInfo.hasUpdate ? '发现新版本' : '检查更新'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(updateInfo.message),
+                  if (updateInfo.hasUpdate &&
+                      updateInfo.releaseNotes.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      '更新内容:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceVariant,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        updateInfo.releaseNotes,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('关闭'),
+                ),
+                if (updateInfo.hasUpdate)
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      UrlService.openUrl(updateInfo.releaseUrl);
+                    },
+                    child: const Text('前往下载'),
+                  ),
+              ],
+            ),
+      );
+    } catch (e) {
+      // 关闭加载对话框
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // 显示错误消息
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('检查更新失败: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 }
