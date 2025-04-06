@@ -38,7 +38,8 @@ class SettingsProvider with ChangeNotifier {
     bool? soundEnabled,
     bool? vibrationEnabled,
     bool? notificationsEnabled,
-    bool? darkMode,
+    AppThemeMode? themeMode,
+    AppThemeColor? themeColor,
   }) async {
     final newSettings = _settings.copyWith(
       focusDuration: focusDuration,
@@ -50,10 +51,43 @@ class SettingsProvider with ChangeNotifier {
       soundEnabled: soundEnabled,
       vibrationEnabled: vibrationEnabled,
       notificationsEnabled: notificationsEnabled,
-      darkMode: darkMode,
+      themeMode: themeMode,
+      themeColor: themeColor,
     );
 
     await updateSettings(newSettings);
+  }
+
+  // 更新主题模式
+  Future<void> updateThemeMode(AppThemeMode themeMode) async {
+    await updateSetting(themeMode: themeMode);
+  }
+
+  // 更新主题颜色
+  Future<void> updateThemeColor(AppThemeColor themeColor) async {
+    await updateSetting(themeColor: themeColor);
+  }
+
+  // 获取Flutter的ThemeMode
+  ThemeMode getFlutterThemeMode() {
+    switch (_settings.themeMode) {
+      case AppThemeMode.system:
+        return ThemeMode.system;
+      case AppThemeMode.light:
+        return ThemeMode.light;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+    }
+  }
+
+  // 获取当前实际的主题模式（考虑系统设置）
+  bool isDarkMode(BuildContext context) {
+    if (_settings.themeMode == AppThemeMode.system) {
+      // 获取系统主题模式
+      final brightness = MediaQuery.platformBrightnessOf(context);
+      return brightness == Brightness.dark;
+    }
+    return _settings.themeMode == AppThemeMode.dark;
   }
 
   // 导出设置

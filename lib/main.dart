@@ -22,7 +22,13 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TaskProvider()),
-        ChangeNotifierProvider(create: (_) => PomodoroProvider()),
+        ChangeNotifierProvider(
+          create:
+              (_) => PomodoroProvider(
+                settings: SettingsProvider().settings,
+                notificationService: notificationService,
+              ),
+        ),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: const MyApp(),
@@ -63,10 +69,6 @@ class _MyAppState extends State<MyApp> {
     // 然后加载任务
     await _taskProvider.init();
 
-    // 设置PomodoroProvider的设置
-    final settings = _settingsProvider.settings;
-    _pomodoroProvider.setSettings(settings);
-
     if (mounted) {
       setState(() {
         _isInitialized = true;
@@ -83,14 +85,14 @@ class _MyAppState extends State<MyApp> {
     }
 
     final settingsProvider = Provider.of<SettingsProvider>(context);
-    final isDarkMode = settingsProvider.settings.darkMode;
+    final settings = settingsProvider.settings;
 
     return MaterialApp(
       title: '番茄时间',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.getLightTheme(),
-      darkTheme: AppTheme.getDarkTheme(),
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: AppTheme.getLightTheme(themeColor: settings.themeColor),
+      darkTheme: AppTheme.getDarkTheme(themeColor: settings.themeColor),
+      themeMode: settingsProvider.getFlutterThemeMode(),
       home: const MainScreen(),
       routes: {
         '/main': (context) => const MainScreen(),

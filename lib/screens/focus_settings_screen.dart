@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/pomodoro_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/task_provider.dart';
+import '../services/notification_service.dart';
 import 'focus_active_screen.dart';
 
 class FocusSettingsScreen extends StatefulWidget {
@@ -265,6 +266,19 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
                       });
                     },
                     contentPadding: EdgeInsets.zero,
+                  ),
+
+                  // 测试通知按钮
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.notifications_active),
+                      label: const Text('测试通知'),
+                      onPressed:
+                          _notificationsEnabled
+                              ? () => _testNotification(context)
+                              : null,
+                    ),
                   ),
                 ],
               ),
@@ -579,5 +593,35 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
 
     // 设置番茄钟设置
     pomodoroProvider.setSettings(settingsProvider.settings);
+  }
+
+  // 测试通知
+  void _testNotification(BuildContext context) async {
+    // 获取通知服务实例
+    final notificationService =
+        Provider.of<PomodoroProvider>(
+          context,
+          listen: false,
+        ).notificationService;
+
+    // 显示加载状态
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('正在发送测试通知...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    // 发送测试通知
+    await notificationService.showNotification(
+      id: 999,
+      title: '测试通知',
+      body: '如果您看到这个通知，说明通知功能正常工作！',
+    );
+
+    // 显示成功消息
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('测试通知已发送'), backgroundColor: Colors.green),
+    );
   }
 }

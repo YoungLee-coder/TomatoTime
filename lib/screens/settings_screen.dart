@@ -11,6 +11,9 @@ import 'backup_restore_screen.dart';
 import '../providers/task_provider.dart';
 import '../providers/pomodoro_provider.dart';
 import 'focus_settings_screen.dart';
+import 'theme_settings_screen.dart';
+import 'theme_color_screen.dart';
+import '../utils/theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -105,13 +108,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ]),
 
                     _buildSettingsSection(context, '外观', [
-                      _buildSwitchSettingCard(
+                      _buildNavigationSettingCardWithWidget(
                         context,
-                        '暗黑模式',
-                        settings.darkMode,
-                        (value) {
-                          settingsProvider.updateSetting(darkMode: value);
+                        '深色模式',
+                        _getThemeModeIcon(settings.themeMode),
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ThemeSettingsScreen(),
+                            ),
+                          );
                         },
+                        subtitle: _getThemeModeText(settings.themeMode),
+                      ),
+                      _buildNavigationSettingCardWithWidget(
+                        context,
+                        '主题颜色',
+                        _buildThemeColorIcon(settings.themeColor),
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ThemeColorScreen(),
+                            ),
+                          );
+                        },
+                        subtitle: _getThemeColorText(settings.themeColor),
                       ),
                     ]),
 
@@ -285,230 +308,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // 开关设置卡片
-  Widget _buildSwitchSettingCard(
-    BuildContext context,
-    String title,
-    bool value,
-    Function(bool) onChanged,
-  ) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 16)),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: Theme.of(context).colorScheme.primary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 时长设置卡片
-  Widget _buildDurationSettingCard(
-    BuildContext context,
-    String title,
-    int value,
-    Function(int) onChanged, {
-    int min = 1,
-    int max = 60,
-    String unit = '分钟',
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final sliderActiveColor =
-        isDarkMode ? Colors.redAccent : colorScheme.primary;
-    final valueColor = isDarkMode ? Colors.redAccent : colorScheme.primary;
-
-    // 设置预设值
-    List<int> presets = [];
-    if (title == '专注时长') {
-      presets = [15, 25, 30, 45, 60];
-    } else if (title == '短休息时长') {
-      presets = [3, 5, 7, 10];
-    } else if (title == '长休息时长') {
-      presets = [10, 15, 20, 30];
-    } else if (title == '长休息间隔') {
-      presets = [2, 3, 4, 5];
-    }
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                InkWell(
-                  onTap: () {
-                    _showPresetsMenu(context, presets, value, onChanged, unit);
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: valueColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$value $unit',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: valueColor,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_drop_down,
-                          size: 16,
-                          color: valueColor,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Text(
-                  '$min',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: sliderActiveColor,
-                      inactiveTrackColor: sliderActiveColor.withOpacity(0.15),
-                      thumbColor: sliderActiveColor,
-                      overlayColor: sliderActiveColor.withOpacity(0.2),
-                      trackHeight: 4.0,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 10.0,
-                        elevation: 2.0,
-                      ),
-                      overlayShape: const RoundSliderOverlayShape(
-                        overlayRadius: 20.0,
-                      ),
-                      tickMarkShape: SliderTickMarkShape.noTickMark,
-                      showValueIndicator: ShowValueIndicator.always,
-                    ),
-                    child: Slider(
-                      value: value.toDouble(),
-                      min: min.toDouble(),
-                      max: max.toDouble(),
-                      divisions: max - min,
-                      onChanged: (newValue) {
-                        onChanged(newValue.round());
-                      },
-                    ),
-                  ),
-                ),
-                Text(
-                  '$max',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 显示预设值菜单
-  void _showPresetsMenu(
-    BuildContext context,
-    List<int> presets,
-    int currentValue,
-    Function(int) onChanged,
-    String unit,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final valueColor = isDarkMode ? Colors.redAccent : colorScheme.primary;
-
-    // 为了在弹出菜单底部添加自定义设置选项，复制一份列表
-    final List<int> menuItems = List.from(presets);
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('选择时间'),
-            content: SizedBox(
-              width: double.minPositive,
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  for (var preset in menuItems)
-                    ListTile(
-                      title: Text('$preset $unit'),
-                      selected: preset == currentValue,
-                      selectedTileColor: valueColor.withOpacity(0.1),
-                      selectedColor: valueColor,
-                      dense: true,
-                      onTap: () {
-                        onChanged(preset);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  const Divider(),
-                  ListTile(
-                    title: const Text('使用滑块自定义'),
-                    leading: const Icon(Icons.tune),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
-  // 导航设置卡片
+  // 导航设置卡片 - 使用IconData
   Widget _buildNavigationSettingCard(
     BuildContext context,
     String title,
     IconData icon,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    String? subtitle,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
@@ -532,7 +339,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Text(title, style: const TextStyle(fontSize: 16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 16)),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurface.withOpacity(0.5),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 导航设置卡片 - 使用自定义Widget图标
+  Widget _buildNavigationSettingCardWithWidget(
+    BuildContext context,
+    String title,
+    Widget iconWidget,
+    VoidCallback onTap, {
+    String? subtitle,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 0,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              iconWidget,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 16)),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               Icon(
                 Icons.chevron_right,
@@ -567,6 +442,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: Theme.of(context).colorScheme.primary,
       ),
     );
+  }
+
+  // 获取主题模式图标
+  Widget _getThemeModeIcon(AppThemeMode mode) {
+    final colorScheme = Theme.of(context).colorScheme;
+    IconData iconData;
+
+    switch (mode) {
+      case AppThemeMode.system:
+        iconData = Icons.brightness_auto;
+        break;
+      case AppThemeMode.light:
+        iconData = Icons.brightness_7;
+        break;
+      case AppThemeMode.dark:
+        iconData = Icons.brightness_4;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(iconData, color: colorScheme.primary, size: 20),
+    );
+  }
+
+  // 获取主题模式文本
+  String _getThemeModeText(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.system:
+        return '跟随系统';
+      case AppThemeMode.light:
+        return '浅色模式';
+      case AppThemeMode.dark:
+        return '深色模式';
+    }
+  }
+
+  // 构建主题颜色图标
+  Widget _buildThemeColorIcon(AppThemeColor themeColor) {
+    final Color color = AppTheme.getPrimaryColor(themeColor);
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(Icons.palette_outlined, color: color, size: 20),
+    );
+  }
+
+  // 获取主题颜色文本
+  String _getThemeColorText(AppThemeColor themeColor) {
+    switch (themeColor) {
+      case AppThemeColor.red:
+        return '红色';
+      case AppThemeColor.blue:
+        return '蓝色';
+      case AppThemeColor.green:
+        return '绿色';
+      case AppThemeColor.purple:
+        return '紫色';
+      case AppThemeColor.orange:
+        return '橙色';
+      case AppThemeColor.teal:
+        return '蓝绿色';
+    }
   }
 
   // 确认重置应用
