@@ -623,12 +623,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
 
       if (updateInfo.error) {
-        // 显示错误消息
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(updateInfo.message),
-            backgroundColor: Colors.red,
-          ),
+        // 显示错误对话框并提供重试选项
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('检查更新失败'),
+                content: Text(updateInfo.message),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('取消'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _checkForUpdates(); // 重试
+                    },
+                    child: const Text('重试'),
+                  ),
+                ],
+              ),
         );
         return;
       }
@@ -678,7 +693,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   FilledButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      UrlService.openUrl(updateInfo.releaseUrl);
+                      UrlService.openUrl(updateInfo.releaseUrl).then((success) {
+                        if (!success && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('无法打开下载页面，请检查网络连接'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      });
                     },
                     child: const Text('前往下载'),
                   ),
@@ -691,10 +715,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Navigator.pop(context);
       }
 
-      // 显示错误消息
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('检查更新失败: $e'), backgroundColor: Colors.red),
-      );
+      // 显示错误对话框和重试选项
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('检查更新失败'),
+                content: Text(
+                  '检查更新时发生错误：\n${e.toString().split(":").first}\n\n请检查网络连接后重试。',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('取消'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _checkForUpdates(); // 重试
+                    },
+                    child: const Text('重试'),
+                  ),
+                ],
+              ),
+        );
+      }
     }
   }
 }

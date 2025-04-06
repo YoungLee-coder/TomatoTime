@@ -8,6 +8,10 @@ class UpdateService {
   static const String _apiUrl =
       'https://api.github.com/repos/YoungLee-coder/TomatoTime/releases';
 
+  /// 备用API地址 - 实际项目中可使用自己的服务器
+  static const String _backupApiUrl =
+      'https://gitee.com/api/v5/repos/YoungLee-coder/TomatoTime/releases';
+
   /// 当前应用版本
   static const String currentVersion = 'Release-1.1';
 
@@ -15,23 +19,66 @@ class UpdateService {
   static const String repoReleasesUrl =
       'https://github.com/YoungLee-coder/TomatoTime/releases';
 
+  /// 备用仓库页面
+  static const String backupRepoUrl =
+      'https://gitee.com/YoungLee-coder/TomatoTime/releases';
+
   /// 检查更新
   Future<UpdateInfo> checkForUpdates() async {
+    // 首先尝试GitHub API
     try {
       final response = await http
           .get(Uri.parse(_apiUrl))
           .timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 15), // 增加超时时间
             onTimeout: () {
               throw Exception('请求超时');
             },
           );
 
-      if (response.statusCode != 200) {
-        throw Exception('服务器返回错误：${response.statusCode}');
+      if (response.statusCode == 200) {
+        return _parseReleaseInfo(response.body);
       }
 
-      final List<dynamic> releases = jsonDecode(response.body);
+      // 如果GitHub API失败，记录错误但不立即抛出
+      debugPrint('GitHub API返回错误：${response.statusCode}，尝试备用API');
+    } catch (e) {
+      // 记录GitHub API错误但继续尝试备用API
+      debugPrint('GitHub API请求失败: $e，尝试备用API');
+    }
+
+    // 尝试备用API
+    try {
+      final response = await http
+          .get(Uri.parse(_backupApiUrl))
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw Exception('备用API请求超时');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        return _parseReleaseInfo(response.body, isBackup: true);
+      }
+
+      throw Exception('备用API返回错误：${response.statusCode}');
+    } catch (e) {
+      debugPrint('检查更新失败: $e');
+      return UpdateInfo(
+        hasUpdate: false,
+        message: '检查更新失败，请检查网络连接或稍后再试',
+        latestVersion: currentVersion,
+        releaseUrl: repoReleasesUrl,
+        error: true,
+      );
+    }
+  }
+
+  /// 解析发布信息
+  UpdateInfo _parseReleaseInfo(String responseBody, {bool isBackup = false}) {
+    try {
+      final List<dynamic> releases = jsonDecode(responseBody);
 
       // 如果没有任何发布版本
       if (releases.isEmpty) {
@@ -39,7 +86,7 @@ class UpdateService {
           hasUpdate: false,
           message: '当前已是最新版本',
           latestVersion: currentVersion,
-          releaseUrl: repoReleasesUrl,
+          releaseUrl: isBackup ? backupRepoUrl : repoReleasesUrl,
         );
       }
 
@@ -55,30 +102,33 @@ class UpdateService {
 
       // 比较版本号
       final bool hasUpdate =
-          _compareVersions(cleanLatestVersion, currentVersion) > 0;
+          _compareVersions(
+            cleanLatestVersion.replaceAll('Release-', ''),
+            currentVersion.replaceAll('Release-', ''),
+          ) >
+          0;
 
       return UpdateInfo(
         hasUpdate: hasUpdate,
-        message: hasUpdate ? '发现新版本：$cleanLatestVersion' : '当前已是最新版本',
-        latestVersion: cleanLatestVersion,
-        releaseUrl: latestRelease['html_url'] ?? repoReleasesUrl,
+        message: hasUpdate ? '发现新版本：$latestVersion' : '当前已是最新版本',
+        latestVersion: latestVersion,
+        releaseUrl:
+            latestRelease['html_url'] ??
+            (isBackup ? backupRepoUrl : repoReleasesUrl),
         releaseNotes: latestRelease['body'] ?? '暂无更新说明',
       );
     } catch (e) {
-      debugPrint('检查更新失败: $e');
-      return UpdateInfo(
-        hasUpdate: false,
-        message: '检查更新失败：$e',
-        latestVersion: currentVersion,
-        releaseUrl: repoReleasesUrl,
-        error: true,
-      );
+      debugPrint('解析发布信息失败: $e');
+      throw Exception('解析发布信息失败: $e');
     }
   }
 
   /// 比较版本号
   /// 如果v1 > v2返回1，如果v1 < v2返回-1，如果相等返回0
   int _compareVersions(String v1, String v2) {
+    // 如果版本号完全相同，直接返回0
+    if (v1 == v2) return 0;
+
     // 分割版本号为主要部分和次要部分
     final List<String> v1Parts = v1.split('.');
     final List<String> v2Parts = v2.split('.');
