@@ -151,6 +151,10 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     final timeRemaining = pomodoroProvider.timeRemaining;
     final currentTask = pomodoroProvider.currentTask;
 
+    // 检测屏幕方向
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     String stateText;
     Color stateColor;
     IconData stateIcon;
@@ -187,6 +191,418 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
         _previousColor?.withOpacity(0.15) ?? stateColor.withOpacity(0.15);
     _previousColor = stateColor;
 
+    // 计算计时器尺寸
+    final timerSize =
+        isLandscape
+            ? MediaQuery.of(context).size.height * 0.6
+            : MediaQuery.of(context).size.width * 0.8;
+
+    // 构建计时器部分
+    Widget timerSection = AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      margin: EdgeInsets.symmetric(
+        vertical: isLandscape ? 16 : 24,
+        horizontal: isLandscape ? 24 : 0,
+      ),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: stateColor.withOpacity(0.2),
+            blurRadius: 30,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: PomodoroTimer(
+        progress: progress,
+        timeRemaining: timeRemaining,
+        isRunning: state != PomodoroState.paused && isRunning,
+        progressColor: stateColor,
+        backgroundColor:
+            Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.white.withOpacity(0.15),
+        size: timerSize,
+        onStart:
+            state == PomodoroState.paused
+                ? () {
+                  pomodoroProvider.resume();
+                }
+                : null,
+        onPause:
+            state != PomodoroState.paused && isRunning
+                ? () {
+                  pomodoroProvider.pause();
+                }
+                : null,
+        onStop: () {
+          _showStopConfirmationDialog(context, pomodoroProvider);
+        },
+      ),
+    );
+
+    // 构建任务信息部分
+    Widget taskSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+
+        // 当前任务
+        if (currentTask != null) ...[
+          Row(
+            children: [
+              Icon(Icons.assignment_outlined, size: 20, color: stateColor),
+              const SizedBox(width: 8),
+              Text(
+                '当前任务',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 任务卡片
+          Card(
+            elevation: 4,
+            shadowColor: Colors.grey.withOpacity(0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: stateColor.withOpacity(0.1), width: 1),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]!.withOpacity(0.9)
+                        : Colors.white.withOpacity(0.9),
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[850]!.withOpacity(0.8)
+                        : Colors.white.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color:
+                              currentTask.isCompleted
+                                  ? Colors.green
+                                  : currentTask.color,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (currentTask.isCompleted
+                                      ? Colors.green
+                                      : currentTask.color)
+                                  .withOpacity(0.4),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          currentTask.title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            decoration:
+                                currentTask.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  if (currentTask.description.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      currentTask.description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // 番茄钟进度
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: stateColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.timer_outlined,
+                          size: 14,
+                          color: stateColor,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '完成进度',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${currentTask.completedPomodoros}/${currentTask.estimatedPomodoros}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              currentTask.isCompleted
+                                  ? Colors.green
+                                  : stateColor,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 进度条
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value:
+                          currentTask.estimatedPomodoros > 0
+                              ? currentTask.completedPomodoros /
+                                  currentTask.estimatedPomodoros
+                              : 0,
+                      minHeight: 8,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceVariant.withOpacity(0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        currentTask.isCompleted ? Colors.green : stateColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ] else ...[
+          Row(
+            children: [
+              Icon(Icons.assignment_late_outlined, size: 20, color: stateColor),
+              const SizedBox(width: 8),
+              Text(
+                '无关联任务',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Card(
+            elevation: 4,
+            shadowColor: Colors.grey.withOpacity(0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: stateColor.withOpacity(0.1), width: 1),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]!.withOpacity(0.9)
+                        : Colors.white.withOpacity(0.9),
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[850]!.withOpacity(0.8)
+                        : Colors.white.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: stateColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.timer_outlined,
+                      color: stateColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      '专注不需要关联任务。您可以在结束后记录此次专注。',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+
+        // 添加专注信息部分
+        const SizedBox(height: 32),
+
+        // 专注信息
+        Row(
+          children: [
+            Icon(Icons.info_outline, size: 20, color: stateColor),
+            const SizedBox(width: 8),
+            Text(
+              '专注信息',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 4,
+          shadowColor: stateColor.withOpacity(0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: stateColor.withOpacity(0.1), width: 1),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[800]!.withOpacity(0.9)
+                      : Colors.white.withOpacity(0.9),
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[850]!.withOpacity(0.8)
+                      : Colors.white.withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: _buildInfoItem(
+                        context,
+                        icon: Icons.timer,
+                        label: '专注时长',
+                        value: TimeFormatter.formatMinutes(
+                          pomodoroProvider.settings.focusDuration,
+                        ),
+                        color: stateColor,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildInfoItem(
+                        context,
+                        icon: Icons.coffee,
+                        label: '短休息',
+                        value: TimeFormatter.formatMinutes(
+                          pomodoroProvider.settings.shortBreakDuration,
+                        ),
+                        color: stateColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: _buildInfoItem(
+                        context,
+                        icon: Icons.weekend,
+                        label: '长休息',
+                        value: TimeFormatter.formatMinutes(
+                          pomodoroProvider.settings.longBreakDuration,
+                        ),
+                        color: stateColor,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildInfoItem(
+                        context,
+                        icon: Icons.repeat,
+                        label: '长休息间隔',
+                        value:
+                            '${pomodoroProvider.settings.longBreakInterval} 个',
+                        color: stateColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 底部操作按钮
+        const SizedBox(height: 32),
+        _buildActions(context, pomodoroProvider),
+      ],
+    );
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AnimatedAppBar(
@@ -210,422 +626,37 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
           );
         },
         child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 计时器
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                    margin: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: stateColor.withOpacity(0.2),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: PomodoroTimer(
-                      progress: progress,
-                      timeRemaining: timeRemaining,
-                      isRunning: state != PomodoroState.paused && isRunning,
-                      progressColor: stateColor,
-                      backgroundColor: Colors.white.withOpacity(0.15),
-                      size: MediaQuery.of(context).size.width * 0.8,
-                      onStart:
-                          state == PomodoroState.paused
-                              ? () {
-                                pomodoroProvider.resume();
-                              }
-                              : null,
-                      onPause:
-                          state != PomodoroState.paused && isRunning
-                              ? () {
-                                pomodoroProvider.pause();
-                              }
-                              : null,
-                      onStop: () {
-                        _showStopConfirmationDialog(context, pomodoroProvider);
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 当前任务
-                  if (currentTask != null) ...[
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.assignment_outlined,
-                          size: 20,
-                          color: stateColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '当前任务',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 任务卡片
-                    Card(
-                      elevation: 4,
-                      shadowColor: stateColor.withOpacity(0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: stateColor.withOpacity(0.1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withOpacity(0.9),
-                              Colors.white.withOpacity(0.8),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 14,
-                                  height: 14,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        currentTask.isCompleted
-                                            ? Colors.green
-                                            : currentTask.color,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: (currentTask.isCompleted
-                                                ? Colors.green
-                                                : currentTask.color)
-                                            .withOpacity(0.4),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    currentTask.title,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      decoration:
-                                          currentTask.isCompleted
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            if (currentTask.description.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                currentTask.description,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-
-                            const SizedBox(height: 16),
-
-                            // 番茄钟进度
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: stateColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.timer_outlined,
-                                    size: 14,
-                                    color: stateColor,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  '完成进度',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.8),
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '${currentTask.completedPomodoros}/${currentTask.estimatedPomodoros}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        currentTask.isCompleted
-                                            ? Colors.green
-                                            : stateColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            // 进度条
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: LinearProgressIndicator(
-                                value:
-                                    currentTask.estimatedPomodoros > 0
-                                        ? currentTask.completedPomodoros /
-                                            currentTask.estimatedPomodoros
-                                        : 0,
-                                minHeight: 8,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceVariant.withOpacity(0.3),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  currentTask.isCompleted
-                                      ? Colors.green
-                                      : stateColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.assignment_late_outlined,
-                          size: 20,
-                          color: stateColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '无关联任务',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      elevation: 4,
-                      shadowColor: Colors.grey.withOpacity(0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: stateColor.withOpacity(0.1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withOpacity(0.9),
-                              Colors.white.withOpacity(0.8),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: stateColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.timer_outlined,
-                                color: stateColor,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                '当前专注没有关联到任何任务，您可以专心集中精力完成自由创作',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 32),
-
-                  // 专注信息
-                  Row(
+          child:
+              isLandscape
+                  // 横屏布局
+                  ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(Icons.info_outline, size: 20, color: stateColor),
-                      const SizedBox(width: 8),
-                      Text(
-                        '专注信息',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
+                      // 左侧计时器部分
+                      Expanded(flex: 5, child: Center(child: timerSection)),
+
+                      // 右侧信息部分
+                      Expanded(
+                        flex: 7,
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(0, 20, 20, 24),
+                          child: taskSection,
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    elevation: 4,
-                    shadowColor: stateColor.withOpacity(0.3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: stateColor.withOpacity(0.1),
-                        width: 1,
-                      ),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withOpacity(0.9),
-                            Colors.white.withOpacity(0.8),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                  )
+                  // 竖屏布局
+                  : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                       child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: _buildInfoItem(
-                                  context,
-                                  icon: Icons.timer,
-                                  label: '专注时长',
-                                  value: TimeFormatter.formatMinutes(
-                                    pomodoroProvider.settings.focusDuration,
-                                  ),
-                                  color: stateColor,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildInfoItem(
-                                  context,
-                                  icon: Icons.coffee,
-                                  label: '短休息',
-                                  value: TimeFormatter.formatMinutes(
-                                    pomodoroProvider
-                                        .settings
-                                        .shortBreakDuration,
-                                  ),
-                                  color: stateColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: _buildInfoItem(
-                                  context,
-                                  icon: Icons.weekend,
-                                  label: '长休息',
-                                  value: TimeFormatter.formatMinutes(
-                                    pomodoroProvider.settings.longBreakDuration,
-                                  ),
-                                  color: stateColor,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildInfoItem(
-                                  context,
-                                  icon: Icons.repeat,
-                                  label: '长休息间隔',
-                                  value:
-                                      '${pomodoroProvider.settings.longBreakInterval} 个',
-                                  color: stateColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [timerSection, taskSection],
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 32),
-
-                  // 底部操作按钮
-                  _buildActions(context, pomodoroProvider),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -645,7 +676,10 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
       width: double.infinity,
       height: 100,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color:
+            Theme.of(context).brightness == Brightness.dark
+                ? color.withOpacity(0.15)
+                : color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -683,35 +717,39 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     required VoidCallback onPressed,
     Color? color,
   }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 500),
-        style: TextStyle(color: Colors.white),
-        child: Icon(icon, size: 18),
-      ),
-      label: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 500),
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
+    // 固定按钮宽度
+    return SizedBox(
+      width: 150, // 固定宽度
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 500),
+          style: TextStyle(color: Colors.white),
+          child: Icon(icon, size: 18),
         ),
-        child: Text(label),
-      ),
-      style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-          return color ?? Theme.of(context).colorScheme.primary;
-        }),
-        foregroundColor: MaterialStateProperty.all(Colors.white),
-        padding: MaterialStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        label: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 500),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+          child: Text(label),
         ),
-        minimumSize: MaterialStateProperty.all(const Size(120, 40)),
-        shape: MaterialStateProperty.all(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        style: ButtonStyle(
+          backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
+            return color ?? Theme.of(context).colorScheme.primary;
+          }),
+          foregroundColor: MaterialStateProperty.all(Colors.white),
+          padding: MaterialStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          minimumSize: MaterialStateProperty.all(const Size(150, 45)),
+          shape: MaterialStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          elevation: MaterialStateProperty.all(2),
+          animationDuration: const Duration(milliseconds: 500),
         ),
-        elevation: MaterialStateProperty.all(2),
-        animationDuration: const Duration(milliseconds: 500),
       ),
     );
   }
@@ -985,35 +1023,36 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
 
     // 组织按钮为网格布局
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0),
+      // 使用与卡片内容一致的内边距
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
       child: Column(
         children: [
-          // 第一行按钮 (最多2个)
-          if (actionButtons.isNotEmpty)
+          // 将按钮布局为两行，每行最多两个按钮
+          if (actionButtons.isNotEmpty) ...[
+            // 第一行按钮
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children:
-                  actionButtons.length == 1
-                      ? [actionButtons[0]]
-                      : [
-                        actionButtons[0],
-                        if (actionButtons.length > 1) actionButtons[1],
-                      ],
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (actionButtons.length > 0) actionButtons[0],
+                if (actionButtons.length > 1) const SizedBox(width: 20), // 固定间距
+                if (actionButtons.length > 1) actionButtons[1],
+              ],
             ),
 
-          // 如果有更多按钮，添加第二行
-          if (actionButtons.length > 2) ...[
-            const SizedBox(height: 8), // 行间距
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children:
-                  actionButtons.length == 3
-                      ? [actionButtons[2]]
-                      : [
-                        actionButtons[2],
-                        if (actionButtons.length > 3) actionButtons[3],
-                      ],
-            ),
+            // 增加行之间的间距
+            const SizedBox(height: 20.0),
+
+            // 第二行按钮（如果有的话）
+            if (actionButtons.length > 2)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (actionButtons.length > 2) actionButtons[2],
+                  if (actionButtons.length > 3)
+                    const SizedBox(width: 20), // 固定间距
+                  if (actionButtons.length > 3) actionButtons[3],
+                ],
+              ),
           ],
         ],
       ),

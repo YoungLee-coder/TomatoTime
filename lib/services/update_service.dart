@@ -13,10 +13,10 @@ class UpdateService {
       'https://gitee.com/api/v5/repos/YoungLee-coder/TomatoTime/releases';
 
   /// 当前应用版本，用于比较是否需要更新
-  static const String _currentVersion = '1.3';
+  static const String _currentVersion = '1.4';
 
   /// 当前应用版本（包含"v"前缀），用于UI显示
-  static const String currentVersion = 'v1.3';
+  static const String currentVersion = 'v1.4';
 
   /// 仓库发布页面URL
   static const String repoReleasesUrl =
