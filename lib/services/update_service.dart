@@ -13,7 +13,7 @@ class UpdateService {
       'https://gitee.com/api/v5/repos/YoungLee-coder/TomatoTime/releases';
 
   /// 当前应用版本
-  static const String currentVersion = 'Release-1.1';
+  static const String currentVersion = 'v1.1';
 
   /// 仓库发布页面URL
   static const String repoReleasesUrl =
@@ -94,19 +94,17 @@ class UpdateService {
       final latestRelease = releases.first;
       final String latestVersion = latestRelease['tag_name'] ?? 'unknown';
 
-      // 移除"Release-"前缀（如果有）
-      final String cleanLatestVersion = latestVersion.replaceAll(
-        'Release-',
-        '',
-      );
+      // 清理版本号，移除前缀如"Release-"或"v"
+      final String cleanLatestVersion = latestVersion
+          .replaceAll('Release-', '')
+          .replaceAll('v', '');
+      final String cleanCurrentVersion = currentVersion
+          .replaceAll('Release-', '')
+          .replaceAll('v', '');
 
       // 比较版本号
       final bool hasUpdate =
-          _compareVersions(
-            cleanLatestVersion.replaceAll('Release-', ''),
-            currentVersion.replaceAll('Release-', ''),
-          ) >
-          0;
+          _compareVersions(cleanLatestVersion, cleanCurrentVersion) > 0;
 
       return UpdateInfo(
         hasUpdate: hasUpdate,

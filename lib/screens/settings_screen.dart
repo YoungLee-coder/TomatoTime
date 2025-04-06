@@ -171,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           showAboutDialog(
                             context: context,
                             applicationName: '番茄时间',
-                            applicationVersion: 'Release-1.1',
+                            applicationVersion: 'v1.1',
                             applicationIcon: Image.asset(
                               'assets/icon/app_icon.png',
                               width: 48,
@@ -207,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           children: [
                             Text(
-                              '版本 Release-1.1',
+                              '版本 v1.1',
                               style: TextStyle(
                                 fontSize: 12,
                                 color:
