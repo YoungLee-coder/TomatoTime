@@ -4,8 +4,12 @@ import '../models/settings.dart';
 import '../services/settings_service.dart';
 
 class SettingsProvider with ChangeNotifier {
-  final SettingsService _settingsService = SettingsService();
+  final SettingsService _settingsService;
   PomodoroSettings _settings = PomodoroSettings();
+
+  // 构造函数接收依赖
+  SettingsProvider({SettingsService? settingsService})
+    : _settingsService = settingsService ?? SettingsService();
 
   PomodoroSettings get settings => _settings;
 

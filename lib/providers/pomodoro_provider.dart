@@ -23,10 +23,10 @@ enum PomodoroState {
 }
 
 class PomodoroProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService _databaseService;
   final NotificationService _notificationService;
-  final SoundService _soundService = SoundService();
-  final VibrationService _vibrationService = VibrationService();
+  final SoundService _soundService;
+  final VibrationService _vibrationService;
 
   PomodoroState _state = PomodoroState.idle;
   PomodoroState _previousActiveState = PomodoroState.idle; // 用于记录暂停前的状态
@@ -49,8 +49,14 @@ class PomodoroProvider with ChangeNotifier {
   PomodoroProvider({
     required PomodoroSettings settings,
     required NotificationService notificationService,
+    SoundService? soundService,
+    VibrationService? vibrationService,
+    DatabaseService? databaseService,
   }) : _settings = settings,
-       _notificationService = notificationService {
+       _notificationService = notificationService,
+       _soundService = soundService ?? SoundService(),
+       _vibrationService = vibrationService ?? VibrationService(),
+       _databaseService = databaseService ?? DatabaseService() {
     _initializeServices();
   }
 

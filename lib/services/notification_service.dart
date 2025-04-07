@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -8,13 +9,25 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  // 判断是否支持通知的平台
+  bool get _isNotificationSupported =>
+      !Platform.isWindows && !Platform.isLinux && !Platform.isMacOS;
+
   // 初始化通知服务
   Future<void> initNotification() async {
     // 初始化时区数据
     tz_data.initializeTimeZones();
 
-    // 检查并请求通知权限（Android 13+需要）
-    await _requestNotificationPermission();
+    // 检查是否是支持通知的平台
+    if (!_isNotificationSupported) {
+      debugPrint('当前平台不支持通知功能');
+      return;
+    }
+
+    // 只在移动平台请求通知权限
+    if (Platform.isAndroid || Platform.isIOS) {
+      await _requestNotificationPermission();
+    }
 
     // Android设置
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -66,6 +79,12 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
+    // 检查平台支持
+    if (!_isNotificationSupported) {
+      debugPrint('在不支持通知的平台上尝试显示通知，操作已跳过');
+      return;
+    }
+
     // 创建Android通知详情
     AndroidNotificationDetails androidPlatformChannelSpecifics =
         const AndroidNotificationDetails(
@@ -108,18 +127,33 @@ class NotificationService {
 
   // 取消指定ID的通知
   Future<void> cancelNotification(int id) async {
+    if (!_isNotificationSupported) {
+      debugPrint('在不支持通知的平台上尝试取消通知，操作已跳过');
+      return;
+    }
+
     await _flutterLocalNotificationsPlugin.cancel(id);
     debugPrint('取消通知: ID=$id');
   }
 
   // 取消所有通知
   Future<void> cancelAllNotifications() async {
+    if (!_isNotificationSupported) {
+      debugPrint('在不支持通知的平台上尝试取消所有通知，操作已跳过');
+      return;
+    }
+
     await _flutterLocalNotificationsPlugin.cancelAll();
     debugPrint('取消所有通知');
   }
 
   // 安排专注结束通知
   Future<void> scheduleFocusEndNotification(int id, Duration duration) async {
+    if (!_isNotificationSupported) {
+      debugPrint('在不支持通知的平台上尝试安排专注结束通知，操作已跳过');
+      return;
+    }
+
     final tz.TZDateTime scheduledTime = tz.TZDateTime.now(
       tz.local,
     ).add(duration);
@@ -172,6 +206,11 @@ class NotificationService {
 
   // 安排休息结束通知
   Future<void> scheduleBreakEndNotification(int id, Duration duration) async {
+    if (!_isNotificationSupported) {
+      debugPrint('在不支持通知的平台上尝试安排休息结束通知，操作已跳过');
+      return;
+    }
+
     final tz.TZDateTime scheduledTime = tz.TZDateTime.now(
       tz.local,
     ).add(duration);

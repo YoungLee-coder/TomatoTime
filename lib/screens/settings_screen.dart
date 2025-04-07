@@ -8,6 +8,9 @@ import '../models/user_profile.dart';
 import '../services/user_service.dart';
 import '../services/update_service.dart';
 import '../services/url_service.dart';
+import '../widgets/settings_title.dart';
+import '../widgets/settings_option.dart';
+import '../widgets/settings_group.dart';
 import 'profile_edit_screen.dart';
 import 'backup_restore_screen.dart';
 import '../providers/task_provider.dart';
@@ -16,9 +19,10 @@ import 'focus_settings_screen.dart';
 import 'theme_settings_screen.dart';
 import 'theme_color_screen.dart';
 import '../utils/theme.dart';
+import 'about_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -78,12 +82,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('设置'), elevation: 0),
+      appBar: AppBar(
+        title: const Text('设置'),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : Container(
-                color: colorScheme.surfaceVariant.withOpacity(0.1),
+                color: colorScheme.surfaceVariant.withOpacity(0.05),
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -93,108 +101,126 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // 用户资料卡片
                     _buildProfileCard(),
 
-                    _buildSettingsSection(context, '番茄设置', [
-                      _buildNavigationSettingCard(
-                        context,
-                        '番茄钟设置',
-                        Icons.timer_outlined,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const FocusSettingsScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ]),
+                    // 番茄钟设置
+                    SettingsGroup(
+                      title: '番茄设置',
+                      icon: Icons.timer_outlined,
+                      children: [
+                        SettingsOption(
+                          icon: Icons.timer_outlined,
+                          title: '番茄钟设置',
+                          subtitle: '设置专注时长、休息时长及其他番茄钟参数',
+                          type: SettingsOptionType.submenu,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const FocusSettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
 
-                    _buildSettingsSection(context, '外观', [
-                      _buildNavigationSettingCardWithWidget(
-                        context,
-                        '深色模式',
-                        _getThemeModeIcon(settings.themeMode),
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ThemeSettingsScreen(),
-                            ),
-                          );
-                        },
-                        subtitle: _getThemeModeText(settings.themeMode),
-                      ),
-                      _buildNavigationSettingCardWithWidget(
-                        context,
-                        '主题颜色',
-                        _buildThemeColorIcon(settings.themeColor),
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ThemeColorScreen(),
-                            ),
-                          );
-                        },
-                        subtitle: _getThemeColorText(settings.themeColor),
-                      ),
-                    ]),
+                    // 外观设置
+                    SettingsGroup(
+                      title: '外观',
+                      icon: Icons.palette_outlined,
+                      children: [
+                        SettingsOption(
+                          icon: Icons.dark_mode_outlined,
+                          title: '深色模式',
+                          subtitle: _getThemeModeText(settings.themeMode),
+                          type: SettingsOptionType.submenu,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const ThemeSettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsOption(
+                          icon: Icons.color_lens_outlined,
+                          title: '主题颜色',
+                          subtitle: _getThemeColorText(settings.themeColor),
+                          type: SettingsOptionType.color,
+                          color: AppTheme.getPrimaryColor(settings.themeColor),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ThemeColorScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
 
-                    _buildSettingsSection(context, '数据', [
-                      _buildNavigationSettingCard(
-                        context,
-                        '备份与恢复',
-                        Icons.backup_rounded,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BackupRestoreScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildNavigationSettingCard(
-                        context,
-                        '重置应用数据',
-                        Icons.restart_alt_rounded,
-                        _confirmResetApp,
-                      ),
-                    ]),
+                    // 数据管理
+                    SettingsGroup(
+                      title: '数据',
+                      icon: Icons.storage_outlined,
+                      children: [
+                        SettingsOption(
+                          icon: Icons.backup_rounded,
+                          title: '备份与恢复',
+                          subtitle: '备份或恢复您的番茄钟数据和设置',
+                          type: SettingsOptionType.submenu,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const BackupRestoreScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsOption(
+                          icon: Icons.restart_alt_rounded,
+                          title: '重置应用数据',
+                          subtitle: '清除所有应用数据，将应用恢复到初始状态',
+                          type: SettingsOptionType.normal,
+                          isAccent: true,
+                          onTap: _confirmResetApp,
+                        ),
+                      ],
+                    ),
 
-                    _buildSettingsSection(context, '关于', [
-                      _buildNavigationSettingCard(
-                        context,
-                        '关于番茄时间',
-                        Icons.info_outline,
-                        () {
-                          showAboutDialog(
-                            context: context,
-                            applicationName: '番茄时间',
-                            applicationVersion: 'v1.4',
-                            applicationIcon: Image.asset(
-                              'assets/icon/app_icon.png',
-                              width: 48,
-                              height: 48,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.timer, size: 48);
-                              },
-                            ),
-                            applicationLegalese: '© 2025 YoungLee 保留所有权利',
-                            children: const [
-                              SizedBox(height: 16),
-                              Text('一款简单好用的番茄工作法应用，帮助您提高工作效率和专注力。'),
-                            ],
-                          );
-                        },
-                      ),
-                      _buildNavigationSettingCard(
-                        context,
-                        '检查更新',
-                        Icons.system_update_outlined,
-                        _checkForUpdates,
-                      ),
-                    ]),
+                    // 关于信息
+                    SettingsGroup(
+                      title: '关于',
+                      icon: Icons.info_outline,
+                      children: [
+                        SettingsOption(
+                          icon: Icons.info_outline,
+                          title: '关于番茄时光',
+                          subtitle: '了解应用的详细信息、开发者及版权声明',
+                          type: SettingsOptionType.submenu,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AboutScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsOption(
+                          icon: Icons.system_update_outlined,
+                          title: '检查更新',
+                          subtitle: '检查是否有新版本可用',
+                          type: SettingsOptionType.normal,
+                          onTap: _checkForUpdates,
+                        ),
+                      ],
+                    ),
 
                     // 底部版权信息
                     const SizedBox(height: 24),
@@ -207,13 +233,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           children: [
                             Text(
-                              '版本 v1.4',
+                              '版本 v1.5',
                               style: TextStyle(
                                 fontSize: 12,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall?.color,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -221,10 +246,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               '©2025 YoungLee 保留所有权利',
                               style: TextStyle(
                                 fontSize: 12,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall?.color,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
                           ],
@@ -259,9 +283,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       _userProfile?.name ?? '用户',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -269,7 +294,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _userProfile?.tagline ?? '专注达人',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -278,149 +305,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icon(
                 Icons.chevron_right,
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 构建设置部分
-  Widget _buildSettingsSection(
-    BuildContext context,
-    String title,
-    List<Widget> children,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, title),
-        ...children,
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-    );
-  }
-
-  // 导航设置卡片 - 使用IconData
-  Widget _buildNavigationSettingCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    VoidCallback onTap, {
-    String? subtitle,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: colorScheme.primary, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontSize: 16)),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.onSurface.withOpacity(0.5),
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 导航设置卡片 - 使用自定义Widget图标
-  Widget _buildNavigationSettingCardWithWidget(
-    BuildContext context,
-    String title,
-    Widget iconWidget,
-    VoidCallback onTap, {
-    String? subtitle,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 0,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Row(
-            children: [
-              iconWidget,
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontSize: 16)),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.onSurface.withOpacity(0.5),
-                size: 20,
               ),
             ],
           ),
@@ -454,28 +338,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // 获取主题模式图标
   Widget _getThemeModeIcon(AppThemeMode mode) {
-    final colorScheme = Theme.of(context).colorScheme;
-    IconData iconData;
-
+    IconData icon;
     switch (mode) {
       case AppThemeMode.system:
-        iconData = Icons.brightness_auto;
+        icon = Icons.brightness_auto;
         break;
       case AppThemeMode.light:
-        iconData = Icons.brightness_7;
+        icon = Icons.brightness_7;
         break;
       case AppThemeMode.dark:
-        iconData = Icons.brightness_4;
+        icon = Icons.brightness_2;
         break;
     }
 
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(iconData, color: colorScheme.primary, size: 20),
+      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
     );
   }
 
@@ -493,15 +375,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // 构建主题颜色图标
   Widget _buildThemeColorIcon(AppThemeColor themeColor) {
-    final Color color = AppTheme.getPrimaryColor(themeColor);
+    final color = AppTheme.getPrimaryColor(themeColor);
 
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(Icons.palette_outlined, color: color, size: 20),
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Theme.of(context).colorScheme.surface,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.4),
+              blurRadius: 2,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -520,225 +420,182 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return '橙色';
       case AppThemeColor.teal:
         return '蓝绿色';
+      default:
+        return '默认';
     }
   }
 
-  // 确认重置应用
+  // 确认重置应用数据
   void _confirmResetApp() {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text('重置应用数据'),
-            content: const Text('确定要重置所有应用数据吗？这将清除所有任务、历史记录和统计数据，此操作不可撤销。'),
+            content: const Text('确定要重置所有应用数据吗？此操作不可恢复。'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.pop(context),
                 child: const Text('取消'),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.pop(context);
                   _resetAppData();
                 },
-                child: const Text('重置'),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('确定'),
               ),
             ],
           ),
     );
   }
 
-  // 执行重置应用数据
+  // 重置应用数据
   Future<void> _resetAppData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
     try {
-      // 重置任务数据
       final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-      final taskSuccess = await taskProvider.resetAllTasks();
-
-      // 重置番茄钟历史记录
       final pomodoroProvider = Provider.of<PomodoroProvider>(
         context,
         listen: false,
       );
-      final pomodoroSuccess = await pomodoroProvider.resetAllHistory();
+      final settingsProvider = Provider.of<SettingsProvider>(
+        context,
+        listen: false,
+      );
 
-      // 判断重置结果
-      if (taskSuccess && pomodoroSuccess) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('应用数据已重置')));
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('部分数据重置失败，请重试')));
+      // 显示加载指示器
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // 重置任务
+      await taskProvider.resetAllTasks();
+
+      // 重置番茄钟历史
+      await pomodoroProvider.resetAllHistory();
+
+      // 重置设置为默认值
+      await settingsProvider.updateSettings(PomodoroSettings());
+
+      // 重置用户资料
+      await _userService.resetProfile();
+      await _loadUserProfile();
+
+      // 关闭加载指示器
+      if (context.mounted) {
+        Navigator.pop(context);
+
+        // 显示成功消息
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('应用数据已重置'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
-      debugPrint('重置应用数据错误: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('重置应用数据时发生错误')));
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // 关闭加载指示器
+      if (context.mounted) {
+        Navigator.pop(context);
+
+        // 显示错误消息
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('重置数据失败: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   // 检查更新
-  void _checkForUpdates() async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    // 显示加载对话框
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('正在检查更新...'),
-              ],
-            ),
-          ),
-    );
-
+  Future<void> _checkForUpdates() async {
     try {
-      // 初始化更新服务并检查更新
+      // 显示加载指示器
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => const AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text('正在检查更新...'),
+                ],
+              ),
+            ),
+      );
+
+      // 检查更新
       final updateService = UpdateService();
       final updateInfo = await updateService.checkForUpdates();
 
-      // 关闭加载对话框
-      if (mounted) {
-        Navigator.pop(context); // 关闭加载对话框
-      }
+      // 关闭加载指示器
+      if (context.mounted) {
+        Navigator.pop(context);
 
-      if (!mounted) return;
-
-      if (updateInfo.error) {
-        // 显示错误对话框并提供重试选项
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('检查更新失败'),
-                content: Text(updateInfo.message),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('取消'),
+        // 根据结果显示不同对话框
+        if (updateInfo.hasUpdate) {
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('有新版本可用'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('最新版本: ${updateInfo.latestVersion}'),
+                      const SizedBox(height: 12),
+                      Text('当前版本: ${UpdateService.currentVersion}'),
+                      const SizedBox(height: 16),
+                      const Text('更新内容:'),
+                      const SizedBox(height: 8),
+                      Text(updateInfo.releaseNotes),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _checkForUpdates(); // 重试
-                    },
-                    child: const Text('重试'),
-                  ),
-                ],
-              ),
-        );
-        return;
-      }
-
-      // 显示更新对话框
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: Text(updateInfo.hasUpdate ? '发现新版本' : '检查更新'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(updateInfo.message),
-                  if (updateInfo.hasUpdate &&
-                      updateInfo.releaseNotes.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      '更新内容:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('稍后更新'),
                     ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceVariant,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        updateInfo.releaseNotes,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        UrlService.openUrl(updateInfo.releaseUrl);
+                      },
+                      child: const Text('立即更新'),
                     ),
                   ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('关闭'),
                 ),
-                if (updateInfo.hasUpdate)
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      UrlService.openUrl(updateInfo.releaseUrl).then((success) {
-                        if (!success && mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('无法打开下载页面，请检查网络连接'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      });
-                    },
-                    child: const Text('前往下载'),
-                  ),
-              ],
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('您已经在使用最新版本'),
+              behavior: SnackBarBehavior.floating,
             ),
-      );
-    } catch (e) {
-      // 关闭加载对话框
-      if (mounted) {
-        Navigator.pop(context);
+          );
+        }
       }
+    } catch (e) {
+      // 关闭加载指示器
+      if (context.mounted) {
+        Navigator.pop(context);
 
-      // 显示错误对话框和重试选项
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('检查更新失败'),
-                content: Text(
-                  '检查更新时发生错误：\n${e.toString().split(":").first}\n\n请检查网络连接后重试。',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('取消'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _checkForUpdates(); // 重试
-                    },
-                    child: const Text('重试'),
-                  ),
-                ],
-              ),
+        // 显示错误消息
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('检查更新失败: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

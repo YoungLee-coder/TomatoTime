@@ -4,10 +4,14 @@ import '../models/task.dart';
 import '../services/database_service.dart';
 
 class TaskProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService _databaseService;
   List<Task> _tasks = [];
   List<Task> _todayTasks = [];
   Task? _currentTask;
+
+  // 构造函数接收依赖
+  TaskProvider({DatabaseService? databaseService})
+    : _databaseService = databaseService ?? DatabaseService();
 
   List<Task> get tasks => _tasks;
   List<Task> get todayTasks => _todayTasks;

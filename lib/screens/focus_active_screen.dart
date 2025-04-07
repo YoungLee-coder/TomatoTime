@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../providers/pomodoro_provider.dart';
@@ -8,12 +10,26 @@ import '../widgets/pomodoro_timer.dart';
 import '../utils/time_formatter.dart';
 import '../widgets/animated_app_bar.dart';
 import '../providers/task_provider.dart';
+import '../widgets/task_card.dart';
+import '../widgets/no_task_info.dart';
+import '../widgets/focus_info_card.dart';
+import '../widgets/focus_action_buttons.dart';
+import '../global/app_global.dart';
+
+// 自定义意图类，用于快捷键
+class PlayPauseIntent extends Intent {
+  const PlayPauseIntent();
+}
+
+class StopIntent extends Intent {
+  const StopIntent();
+}
 
 class FocusActiveScreen extends StatefulWidget {
-  const FocusActiveScreen({Key? key}) : super(key: key);
+  const FocusActiveScreen({super.key});
 
   @override
-  _FocusActiveScreenState createState() => _FocusActiveScreenState();
+  State<FocusActiveScreen> createState() => _FocusActiveScreenState();
 }
 
 class _FocusActiveScreenState extends State<FocusActiveScreen>
@@ -73,9 +89,6 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     );
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
 
-    // 立即检查是否需要刷新
-    _checkForTaskRefresh();
-
     // 立即刷新一次任务列表，确保最新状态
     taskProvider.refreshTasks();
 
@@ -95,35 +108,6 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
         debugPrint('监测到番茄钟提供者标志变化，立即刷新任务列表');
         pomodoroProvider.resetRefreshTasksFlag();
         taskProvider.refreshTasks();
-      }
-    });
-  }
-
-  // 检查是否需要刷新任务
-  void _checkForTaskRefresh() {
-    if (!mounted) return;
-
-    final pomodoroProvider = Provider.of<PomodoroProvider>(
-      context,
-      listen: false,
-    );
-    if (pomodoroProvider.needRefreshTasks) {
-      debugPrint('检测到需要刷新任务列表');
-
-      // 重置标志
-      pomodoroProvider.resetRefreshTasksFlag();
-
-      // 刷新任务
-      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-      taskProvider.refreshTasks();
-
-      debugPrint('刷新任务列表完成');
-    }
-
-    // 更频繁地检查是否需要刷新（从2秒改为0.5秒）
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _checkForTaskRefresh();
       }
     });
   }
@@ -154,6 +138,10 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     // 检测屏幕方向
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
+
+    // 检测是否是桌面平台
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
     String stateText;
     Color stateColor;
@@ -268,157 +256,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
           const SizedBox(height: 12),
 
           // 任务卡片
-          Card(
-            elevation: 4,
-            shadowColor: Colors.grey.withOpacity(0.3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: stateColor.withOpacity(0.1), width: 1),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]!.withOpacity(0.9)
-                        : Colors.white.withOpacity(0.9),
-                    Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[850]!.withOpacity(0.8)
-                        : Colors.white.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color:
-                              currentTask.isCompleted
-                                  ? Colors.green
-                                  : currentTask.color,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: (currentTask.isCompleted
-                                      ? Colors.green
-                                      : currentTask.color)
-                                  .withOpacity(0.4),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          currentTask.title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            decoration:
-                                currentTask.isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  if (currentTask.description.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      currentTask.description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  // 番茄钟进度
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: stateColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.timer_outlined,
-                          size: 14,
-                          color: stateColor,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        '完成进度',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.8),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${currentTask.completedPomodoros}/${currentTask.estimatedPomodoros}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              currentTask.isCompleted
-                                  ? Colors.green
-                                  : stateColor,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // 进度条
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value:
-                          currentTask.estimatedPomodoros > 0
-                              ? currentTask.completedPomodoros /
-                                  currentTask.estimatedPomodoros
-                              : 0,
-                      minHeight: 8,
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceVariant.withOpacity(0.3),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        currentTask.isCompleted ? Colors.green : stateColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          TaskCard(task: currentTask, stateColor: stateColor),
         ] else ...[
           Row(
             children: [
@@ -435,60 +273,7 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
             ],
           ),
           const SizedBox(height: 12),
-          Card(
-            elevation: 4,
-            shadowColor: Colors.grey.withOpacity(0.3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: stateColor.withOpacity(0.1), width: 1),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[800]!.withOpacity(0.9)
-                        : Colors.white.withOpacity(0.9),
-                    Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey[850]!.withOpacity(0.8)
-                        : Colors.white.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: stateColor.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.timer_outlined,
-                      color: stateColor,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      '专注不需要关联任务。您可以在结束后记录此次专注。',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          NoTaskInfo(stateColor: stateColor),
         ],
 
         // 添加专注信息部分
@@ -499,256 +284,85 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
           children: [
             Icon(Icons.info_outline, size: 20, color: stateColor),
             const SizedBox(width: 8),
-            Text(
-              '专注信息',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+            Flexible(
+              child: Text(
+                '专注信息',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        Card(
-          elevation: 4,
-          shadowColor: stateColor.withOpacity(0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: stateColor.withOpacity(0.1), width: 1),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]!.withOpacity(0.9)
-                      : Colors.white.withOpacity(0.9),
-                  Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[850]!.withOpacity(0.8)
-                      : Colors.white.withOpacity(0.8),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                // 第一行信息（专注时长和短休息）
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInfoItem(
-                        context,
-                        icon: Icons.timer,
-                        label: '专注时长',
-                        value: TimeFormatter.formatMinutes(
-                          pomodoroProvider.settings.focusDuration,
-                        ),
-                        color: stateColor,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildInfoItem(
-                        context,
-                        icon: Icons.coffee,
-                        label: '短休息',
-                        value: TimeFormatter.formatMinutes(
-                          pomodoroProvider.settings.shortBreakDuration,
-                        ),
-                        color: stateColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // 第二行信息（长休息和长休息间隔）
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInfoItem(
-                        context,
-                        icon: Icons.weekend,
-                        label: '长休息',
-                        value: TimeFormatter.formatMinutes(
-                          pomodoroProvider.settings.longBreakDuration,
-                        ),
-                        color: stateColor,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildInfoItem(
-                        context,
-                        icon: Icons.repeat,
-                        label: '长休息间隔',
-                        value:
-                            '${pomodoroProvider.settings.longBreakInterval} 个',
-                        color: stateColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        FocusInfoCard(
+          pomodoroProvider: pomodoroProvider,
+          stateColor: stateColor,
         ),
 
         // 底部操作按钮
         const SizedBox(height: 32),
-        _buildActions(context, pomodoroProvider),
+        FocusActionButtons(
+          pomodoroProvider: pomodoroProvider,
+          stateColor: stateColor,
+          showFinishEarlyDialog: _showFinishEarlyDialog,
+          showAbandonDialog: _showAbandonDialog,
+          showChangeStateConfirmDialog: _showChangeStateConfirmDialog,
+        ),
       ],
     );
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AnimatedAppBar(
-        title: stateText,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: stateColor,
-        titleSpacing: 8,
-        leading: BackButton(color: stateColor),
-      ),
-      body: TweenAnimationBuilder<Color?>(
-        tween: ColorTween(begin: beginColor, end: stateColor.withOpacity(0.15)),
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-        builder: (context, color, child) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(color: color),
-            child: child,
-          );
+    // 添加快捷键支持
+    if (isDesktop) {
+      return Shortcuts(
+        shortcuts: <LogicalKeySet, Intent>{
+          LogicalKeySet(LogicalKeyboardKey.space): const PlayPauseIntent(),
+          LogicalKeySet(LogicalKeyboardKey.escape): const StopIntent(),
         },
-        child: SafeArea(
-          child:
-              isLandscape
-                  // 横屏布局
-                  ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // 左侧计时器部分
-                      Expanded(flex: 5, child: Center(child: timerSection)),
-
-                      // 右侧信息部分
-                      Expanded(
-                        flex: 7,
-                        child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(0, 20, 20, 24),
-                          child: taskSection,
-                        ),
-                      ),
-                    ],
-                  )
-                  // 竖屏布局
-                  : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [timerSection, taskSection],
-                      ),
-                    ),
-                  ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.all(12),
-      width: double.infinity,
-      height: 85,
-      decoration: BoxDecoration(
-        color:
-            Theme.of(context).brightness == Brightness.dark
-                ? color.withOpacity(0.15)
-                : color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            PlayPauseIntent: CallbackAction<PlayPauseIntent>(
+              onInvoke: (PlayPauseIntent intent) {
+                if (state == PomodoroState.paused) {
+                  pomodoroProvider.resume();
+                } else if (state != PomodoroState.paused && isRunning) {
+                  pomodoroProvider.pause();
+                }
+                return null;
+              },
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+            StopIntent: CallbackAction<StopIntent>(
+              onInvoke: (StopIntent intent) {
+                _showStopConfirmationDialog(context, pomodoroProvider);
+                return null;
+              },
             ),
-            textAlign: TextAlign.center,
+          },
+          child: _buildMainScaffold(
+            context,
+            stateText,
+            stateColor,
+            beginColor,
+            isLandscape,
+            timerSection,
+            taskSection,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    Color? color,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 500),
-        style: TextStyle(color: Colors.white),
-        child: Icon(icon, size: 18),
-      ),
-      label: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 500),
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
         ),
-        child: Text(label),
-      ),
-      style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.resolveWith<Color>((states) {
-          return color ?? Theme.of(context).colorScheme.primary;
-        }),
-        foregroundColor: MaterialStateProperty.all(Colors.white),
-        padding: MaterialStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        ),
-        minimumSize: MaterialStateProperty.all(const Size(0, 45)),
-        maximumSize: MaterialStateProperty.all(const Size(double.infinity, 50)),
-        shape: MaterialStateProperty.all(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        elevation: MaterialStateProperty.all(2),
-        animationDuration: const Duration(milliseconds: 500),
-      ),
-    );
+      );
+    } else {
+      return _buildMainScaffold(
+        context,
+        stateText,
+        stateColor,
+        beginColor,
+        isLandscape,
+        timerSection,
+        taskSection,
+      );
+    }
   }
 
   void _showStopConfirmationDialog(
@@ -868,215 +482,6 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
     );
   }
 
-  // 构建底部操作按钮
-  Widget _buildActions(
-    BuildContext context,
-    PomodoroProvider pomodoroProvider,
-  ) {
-    final state = pomodoroProvider.state;
-    final List<Widget> actionButtons = [];
-
-    // 根据状态添加不同按钮
-    if (state == PomodoroState.focusing) {
-      // 短休息按钮
-      actionButtons.add(
-        _buildActionButton(
-          context,
-          icon: Icons.coffee,
-          label: '短休息',
-          onPressed: () {
-            _showChangeStateConfirmDialog(
-              context,
-              pomodoroProvider,
-              '开始短休息',
-              '这将视为提前完成当前番茄钟，是否继续？',
-              () async {
-                // 设置手动状态切换标志
-                pomodoroProvider.setManualStateChange(true);
-
-                // 先提前完成当前番茄钟，确保统计正确记录
-                await pomodoroProvider.finishEarly(context);
-
-                // 如果上下文还有效，则开始短休息
-                if (context.mounted) {
-                  pomodoroProvider.startShortBreak(context);
-                }
-              },
-            );
-          },
-        ),
-      );
-
-      // 长休息按钮
-      actionButtons.add(
-        _buildActionButton(
-          context,
-          icon: Icons.weekend,
-          label: '长休息',
-          onPressed: () {
-            _showChangeStateConfirmDialog(
-              context,
-              pomodoroProvider,
-              '开始长休息',
-              '这将视为提前完成当前番茄钟，是否继续？',
-              () async {
-                // 设置手动状态切换标志
-                pomodoroProvider.setManualStateChange(true);
-
-                // 先提前完成当前番茄钟，确保统计正确记录
-                await pomodoroProvider.finishEarly(context);
-
-                // 如果上下文还有效，则开始长休息
-                if (context.mounted) {
-                  pomodoroProvider.startLongBreak(context);
-                }
-              },
-            );
-          },
-        ),
-      );
-    } else if (state == PomodoroState.shortBreak ||
-        state == PomodoroState.longBreak) {
-      // 专注按钮
-      actionButtons.add(
-        _buildActionButton(
-          context,
-          icon: Icons.timer,
-          label: '专注',
-          onPressed: () {
-            _showChangeStateConfirmDialog(
-              context,
-              pomodoroProvider,
-              '开始专注',
-              '这将提前结束休息直接进入下一个番茄钟，是否继续？',
-              () async {
-                // 设置手动状态切换标志
-                pomodoroProvider.setManualStateChange(true);
-
-                // 提前结束休息
-                await pomodoroProvider.finishBreakEarly(context);
-
-                // 如果上下文还有效，则开始专注
-                if (context.mounted) {
-                  pomodoroProvider.startFocus(context);
-                }
-              },
-            );
-          },
-        ),
-      );
-    }
-
-    // 仅在专注状态下显示提前结束和放弃番茄钟按钮
-    if (state == PomodoroState.focusing ||
-        (state == PomodoroState.paused &&
-            pomodoroProvider.previousActiveState == PomodoroState.focusing)) {
-      // 提前结束按钮
-      actionButtons.add(
-        _buildActionButton(
-          context,
-          icon: Icons.done_all,
-          label: '提前结束',
-          color: Theme.of(context).colorScheme.tertiary,
-          onPressed: () {
-            _showFinishEarlyDialog(context, pomodoroProvider);
-          },
-        ),
-      );
-
-      // 放弃番茄钟按钮
-      actionButtons.add(
-        _buildActionButton(
-          context,
-          icon: Icons.cancel_outlined,
-          label: '放弃番茄钟',
-          color: Colors.red,
-          onPressed: () {
-            _showAbandonDialog(context, pomodoroProvider);
-          },
-        ),
-      );
-    }
-    // 仅在休息状态下显示提前结束按钮
-    else if (state == PomodoroState.shortBreak ||
-        state == PomodoroState.longBreak ||
-        (state == PomodoroState.paused &&
-            (pomodoroProvider.previousActiveState == PomodoroState.shortBreak ||
-                pomodoroProvider.previousActiveState ==
-                    PomodoroState.longBreak))) {
-      // 提前结束按钮
-      actionButtons.add(
-        _buildActionButton(
-          context,
-          icon: Icons.done_all,
-          label: '提前结束',
-          color: Theme.of(context).colorScheme.tertiary,
-          onPressed: () {
-            _showFinishEarlyDialog(context, pomodoroProvider);
-          },
-        ),
-      );
-    }
-
-    // 组织按钮为网格布局
-    return Padding(
-      // 增加左右内边距，确保按钮不会太靠近屏幕边缘
-      padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 32.0),
-      child: Column(
-        children: [
-          // 将按钮布局为两行，每行最多两个按钮
-          if (actionButtons.isNotEmpty) ...[
-            // 第一行按钮
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (actionButtons.length > 0)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: actionButtons[0],
-                    ),
-                  ),
-                if (actionButtons.length > 1)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: actionButtons[1],
-                    ),
-                  ),
-              ],
-            ),
-
-            // 增加行之间的间距
-            const SizedBox(height: 16.0),
-
-            // 第二行按钮（如果有的话）
-            if (actionButtons.length > 2)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (actionButtons.length > 2)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: actionButtons[2],
-                      ),
-                    ),
-                  if (actionButtons.length > 3)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: actionButtons[3],
-                      ),
-                    ),
-                ],
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-
   // 显示状态切换确认对话框
   void _showChangeStateConfirmDialog(
     BuildContext context,
@@ -1107,6 +512,104 @@ class _FocusActiveScreenState extends State<FocusActiveScreen>
               ),
             ],
           ),
+    );
+  }
+
+  // 构建主界面Scaffold
+  Widget _buildMainScaffold(
+    BuildContext context,
+    String stateText,
+    Color stateColor,
+    Color beginColor,
+    bool isLandscape,
+    Widget timerSection,
+    Widget taskSection,
+  ) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AnimatedAppBar(
+        title: stateText,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: stateColor,
+        titleSpacing: 8,
+        leading: BackButton(color: stateColor),
+      ),
+      // 使用可滚动视图包装整个内容
+      body: TweenAnimationBuilder<Color?>(
+        tween: ColorTween(begin: beginColor, end: stateColor.withOpacity(0.15)),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        builder: (context, color, child) {
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(color: color),
+            child: child,
+          );
+        },
+        child: SafeArea(
+          child:
+              isLandscape
+                  // 横屏布局
+                  ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start, // 改为顶部对齐
+                    children: [
+                      // 左侧计时器部分
+                      Expanded(flex: 5, child: Center(child: timerSection)),
+
+                      // 右侧信息部分
+                      Expanded(
+                        flex: 7,
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(0, 20, 20, 24),
+                          child: taskSection,
+                        ),
+                      ),
+                    ],
+                  )
+                  // 竖屏布局，确保使用SingleChildScrollView
+                  : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        // 添加此行，确保列高度不会溢出
+                        mainAxisSize: MainAxisSize.min,
+                        children: [timerSection, taskSection],
+                      ),
+                    ),
+                  ),
+        ),
+      ),
+    );
+  }
+
+  // 测试通知
+  Future<void> _testNotification(BuildContext context) async {
+    // 使用AppGlobal获取通知服务
+    final notificationService = AppGlobal.getNotificationService(context);
+
+    // 显示加载状态
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('正在发送测试通知...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    // 发送测试通知
+    await notificationService.showNotification(
+      id: 999,
+      title: '测试通知',
+      body: '如果您看到这个通知，说明通知功能正常工作！',
+    );
+
+    // 显示成功消息
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('测试通知已发送'), backgroundColor: Colors.green),
     );
   }
 }

@@ -75,13 +75,7 @@ class ThemeColorScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
-          border:
-              isSelected
-                  ? Border.all(
-                    color: Theme.of(context).colorScheme.onBackground,
-                    width: 2,
-                  )
-                  : null,
+          border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
           boxShadow: [
             BoxShadow(
               color: color.withOpacity(0.5),
