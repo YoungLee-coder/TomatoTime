@@ -79,7 +79,7 @@ class AboutScreen extends StatelessWidget {
 
                 // 应用版本
                 Text(
-                  'v1.5',
+                  'v1.5.1',
                   style: TextStyle(
                     fontSize: 16,
                     color: Theme.of(
@@ -104,7 +104,7 @@ class AboutScreen extends StatelessWidget {
                   title: '开发者信息',
                   content:
                       '由YoungLee开发，使用Flutter构建的跨平台应用，'
-                      '支持Windows、Android和iOS平台。',
+                      '支持Windows、Android平台。',
                 ),
 
                 // 联系方式
@@ -126,7 +126,7 @@ class AboutScreen extends StatelessWidget {
                   buttonText: '查看源代码',
                   onPressed: () {
                     UrlService.openUrl(
-                      'https://github.com/younglee/tomato-time',
+                      'https://github.com/YoungLee-coder/TomatoTime',
                     );
                   },
                 ),

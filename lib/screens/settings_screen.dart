@@ -233,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           children: [
                             Text(
-                              '版本 v1.5',
+                              '版本 v1.5.1',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Theme.of(
