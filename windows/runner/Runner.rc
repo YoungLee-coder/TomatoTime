@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "cn" "\0"
-            VALUE "FileDescription", "番茄时间" "\0"
+            VALUE "FileDescription", "Tomato Time" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "番茄时间" "\0"
+            VALUE "InternalName", "Tomato Time" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 cn. All rights reserved." "\0"
             VALUE "OriginalFilename", "cn_younglee_pomodoro.exe" "\0"
-            VALUE "ProductName", "番茄时间" "\0"
+            VALUE "ProductName", "Tomato Time" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

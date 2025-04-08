@@ -38,11 +38,14 @@ void main() async {
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
+      title: 'Tomato Time', // 设置默认英文标题
     );
 
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
+      // 使用window_manager动态设置中文标题
+      await windowManager.setTitle('番茄时间');
     });
 
     // 初始化系统托盘

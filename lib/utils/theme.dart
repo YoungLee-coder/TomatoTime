@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'dart:io';
 import '../models/settings.dart';
 
 class AppTheme {
+  // 获取平台相关的字体
+  static String getFontFamily() {
+    if (Platform.isWindows) {
+      // Windows平台使用系统自带字体，不需要额外加载字体文件
+      return 'Microsoft YaHei UI';
+    } else {
+      return 'HMOSRegular'; // 其他平台使用原有字体
+    }
+  }
+
   // 主题颜色映射表
   static const Map<AppThemeColor, Color> themeColors = {
     AppThemeColor.red: Color(0xFFE53935), // 红色，番茄色
@@ -113,7 +124,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'HMOSRegular',
+      fontFamily: getFontFamily(),
       colorScheme: colorScheme,
       // 使用colorScheme替代单独设置primaryColor
       scaffoldBackgroundColor: colorScheme.background,
@@ -287,7 +298,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'HMOSRegular',
+      fontFamily: getFontFamily(),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colorScheme.background,
       appBarTheme: AppBarTheme(
