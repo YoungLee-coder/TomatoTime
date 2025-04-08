@@ -1,7 +1,7 @@
 name: cn_younglee_pomodoro
 description: "番茄时间"
 publish_to: 'none'
-version: 1.4.0+0
+version: 1.5.0+0
 
 environment:
   sdk: ^3.7.2
@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   path: ^1.8.3
   sqflite: ^2.3.0
+  sqflite_common_ffi: ^2.3.0+2
   provider: ^6.0.5
   intl: ^0.19.0
   fl_chart: ^0.66.0
@@ -27,11 +28,15 @@ dependencies:
   image_picker: ^1.0.7
   http: ^1.2.0
   url_launcher: ^6.2.4
+  # Windows平台特定依赖
+  window_manager: ^0.3.5
+  system_tray: ^2.0.3
+  desktop_window: ^0.4.0
+  flutter_launcher_icons: ^0.14.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.14.3
   flutter_lints: ^5.0.0
 
 flutter:
@@ -40,11 +45,25 @@ flutter:
     - assets/images/
     - assets/icon/
     - assets/sounds/
+    
+  # 添加字体配置
+  fonts:
+    - family: HMOSRegular
+      fonts:
+        - asset: assets/fonts/hmosregular.ttf
+          weight: 400
+    - family: HMOSSan
+      fonts:
+        - asset: assets/fonts/hmossan.ttf
+          weight: 400
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: false
   ios: false
-  image_path: "assets/icon/app_icon.png"
-  min_sdk_android: 21
+  image_path: "android/app/src/main/res/mipmap-xxxhdpi/launcher_icon.png"
+  windows:
+    generate: true
+    image_path: "android/app/src/main/res/mipmap-xxxhdpi/launcher_icon.png"
+    icon_size: 48
   adaptive_icon_background: "#FF7F5F"
   remove_alpha_ios: true 

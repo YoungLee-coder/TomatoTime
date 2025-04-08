@@ -303,6 +303,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
 
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    final tasks = taskProvider.tasks;
 
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
@@ -334,6 +335,39 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         }
       }
     } else {
+      // 创建新任务前检查是否存在重名任务
+      bool isDuplicate = false;
+      for (var task in tasks) {
+        if (task.title.toLowerCase() == title.toLowerCase()) {
+          isDuplicate = true;
+          break;
+        }
+      }
+
+      if (isDuplicate) {
+        // 显示错误提示
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('任务名称重复'),
+                  content: Text('已存在名为"$title"的任务，请使用不同的名称。'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('确定'),
+                    ),
+                  ],
+                ),
+          );
+        }
+        return;
+      }
+
       // 创建新任务
       try {
         final newTask = Task(

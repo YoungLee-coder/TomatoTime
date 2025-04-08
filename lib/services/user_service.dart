@@ -77,4 +77,25 @@ class UserService {
       return false;
     }
   }
+
+  // 重置用户资料
+  Future<bool> resetProfile() async {
+    try {
+      // 获取当前资料
+      final currentProfile = await getUserProfile();
+
+      // 如果有头像，删除头像文件
+      if (currentProfile.avatarPath != null &&
+          currentProfile.avatarPath!.isNotEmpty) {
+        await deleteAvatar(currentProfile.avatarPath!);
+      }
+
+      // 创建默认资料并保存
+      final defaultProfile = UserProfile();
+      return await saveUserProfile(defaultProfile);
+    } catch (e) {
+      debugPrint('Error resetting user profile: $e');
+      return false;
+    }
+  }
 }

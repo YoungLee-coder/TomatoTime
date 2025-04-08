@@ -433,6 +433,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ) {
           return TaskCard(
             task: task,
+            stateColor: Theme.of(context).colorScheme.primary,
             onTap: () {
               // 导航到任务详情页
               Navigator.pushNamed(context, '/task_detail', arguments: task);

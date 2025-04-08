@@ -310,6 +310,7 @@ class TodayTasksTab extends StatelessWidget {
   Widget _buildTaskCard(BuildContext context, task, TaskProvider taskProvider) {
     return TaskCard(
       task: task,
+      stateColor: Theme.of(context).colorScheme.primary,
       onTap: () {
         Navigator.push(
           context,
@@ -329,6 +330,40 @@ class TodayTasksTab extends StatelessWidget {
           context,
           listen: false,
         );
+
+        // 检查是否有番茄钟正在进行中
+        if (pomodoroProvider.isRunning &&
+            (pomodoroProvider.state == PomodoroState.focusing ||
+                pomodoroProvider.state == PomodoroState.shortBreak ||
+                pomodoroProvider.state == PomodoroState.longBreak)) {
+          // 显示提示对话框
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('番茄钟正在进行中'),
+                  content: const Text('当前已有一个番茄钟正在进行，请先完成或放弃当前番茄钟。'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        // 跳转到正在进行中的番茄钟页面
+                        Navigator.pushNamed(context, '/focus_active');
+                      },
+                      child: const Text('查看当前番茄钟'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('关闭'),
+                    ),
+                  ],
+                ),
+          );
+          return;
+        }
 
         // 检查是否有已暂停的番茄钟
         if (pomodoroProvider.state == PomodoroState.paused) {
@@ -599,6 +634,7 @@ class AllTasksTab extends StatelessWidget {
   Widget _buildTaskCard(BuildContext context, task, TaskProvider taskProvider) {
     return TaskCard(
       task: task,
+      stateColor: Theme.of(context).colorScheme.primary,
       onTap: () {
         Navigator.push(
           context,
@@ -618,6 +654,40 @@ class AllTasksTab extends StatelessWidget {
           context,
           listen: false,
         );
+
+        // 检查是否有番茄钟正在进行中
+        if (pomodoroProvider.isRunning &&
+            (pomodoroProvider.state == PomodoroState.focusing ||
+                pomodoroProvider.state == PomodoroState.shortBreak ||
+                pomodoroProvider.state == PomodoroState.longBreak)) {
+          // 显示提示对话框
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('番茄钟正在进行中'),
+                  content: const Text('当前已有一个番茄钟正在进行，请先完成或放弃当前番茄钟。'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        // 跳转到正在进行中的番茄钟页面
+                        Navigator.pushNamed(context, '/focus_active');
+                      },
+                      child: const Text('查看当前番茄钟'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('关闭'),
+                    ),
+                  ],
+                ),
+          );
+          return;
+        }
 
         // 检查是否有已暂停的番茄钟
         if (pomodoroProvider.state == PomodoroState.paused) {

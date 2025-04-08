@@ -10,7 +10,7 @@ class AnimatedAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
 
   const AnimatedAppBar({
-    Key? key,
+    super.key,
     required this.title,
     this.backgroundColor,
     this.foregroundColor,
@@ -18,7 +18,7 @@ class AnimatedAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.titleSpacing,
     this.actions,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

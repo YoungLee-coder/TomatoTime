@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/task.dart';
 import '../models/pomodoro_history.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
+import '../utils/db_utils.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -26,7 +27,7 @@ class DatabaseService {
       throw UnimplementedError("Web平台暂不支持SQLite");
     }
 
-    String path = join(await getDatabasesPath(), 'pomodoro_app.db');
+    String path = await DbUtils.getDatabasePath('pomodoro_app.db');
     return await openDatabase(path, version: 1, onCreate: _createDatabase);
   }
 

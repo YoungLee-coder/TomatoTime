@@ -398,172 +398,221 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
     String? suffix,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final sliderActiveColor =
-        isDarkMode ? Colors.redAccent : colorScheme.primary;
-    final valueColor = isDarkMode ? Colors.redAccent : colorScheme.primary;
+    final valueColor = colorScheme.primary;
 
-    // 设置预设值
+    // 设置预设值 - 所有类型使用偶数个预设值，适合2列布局
     List<int> presets = [];
     if (title == '专注时长') {
-      presets = [15, 25, 30, 45, 60];
+      presets = [15, 25, 30, 45, 50, 60]; // 增加一个50分钟的选项
     } else if (title == '短休息时长') {
-      presets = [3, 5, 7, 10];
+      presets = [3, 5, 7, 10]; // 保持4个选项
     } else if (title == '长休息时长') {
-      presets = [10, 15, 20, 30];
+      presets = [10, 15, 20, 25, 30, 45]; // 增加25和45分钟选项
     } else if (title == '长休息间隔') {
-      presets = [2, 3, 4, 5];
+      presets = [2, 3, 4, 6]; // 替换5为6，保持4个选项
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      color: colorScheme.surfaceVariant.withOpacity(0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16)),
-            InkWell(
-              onTap: () {
-                _showPresetsMenu(
-                  context,
-                  presets,
-                  value,
-                  onChanged,
-                  suffix ?? ' 分钟',
+            // 使用LayoutBuilder检测可用空间，适应横屏
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // 检测当前设备方向
+                bool isLandscape =
+                    MediaQuery.of(context).orientation == Orientation.landscape;
+                // 根据方向调整文字大小
+                double titleSize = isLandscape ? 15.0 : 16.0;
+                double valueSize = isLandscape ? 13.0 : 14.0;
+
+                return Container(
+                  height: 36, // 固定高度
+                  child: Row(
+                    // 在横屏模式下确保布局紧凑
+                    mainAxisSize:
+                        isLandscape ? MainAxisSize.min : MainAxisSize.max,
+                    children: [
+                      // 标题文本 - 使用Flexible防止溢出
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: titleSize,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // 当前值显示
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isLandscape ? 8 : 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: valueColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$value ${suffix ?? '分钟'}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: valueSize,
+                            color: valueColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: valueColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$value ${suffix ?? '分钟'}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: valueColor,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.arrow_drop_down, size: 16, color: valueColor),
-                  ],
-                ),
-              ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              '$min',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            Expanded(
-              child: SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: sliderActiveColor,
-                  inactiveTrackColor: sliderActiveColor.withOpacity(0.15),
-                  thumbColor: sliderActiveColor,
-                  overlayColor: sliderActiveColor.withOpacity(0.2),
-                  trackHeight: 4.0,
-                  thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 10.0,
-                    elevation: 2.0,
+            const SizedBox(height: 16),
+            // 使用GridView.builder以提供更灵活的网格布局
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // 检测是否为横屏模式
+                bool isLandscape =
+                    MediaQuery.of(context).orientation == Orientation.landscape;
+                // 根据屏幕方向调整布局
+                int crossAxisCount = isLandscape ? 3 : 2; // 横屏3列，竖屏2列
+                double childAspectRatio = isLandscape ? 4.0 : 3.0; // 横屏时按钮更宽
+
+                return GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(), // 禁止滚动
+                  shrinkWrap: true, // 自动调整高度
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: childAspectRatio,
+                    crossAxisSpacing: 8, // 水平间距
+                    mainAxisSpacing: 8, // 垂直间距
                   ),
-                  overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 20.0,
-                  ),
-                  tickMarkShape: SliderTickMarkShape.noTickMark,
-                  showValueIndicator: ShowValueIndicator.always,
-                ),
-                child: Slider(
-                  value: value.toDouble(),
-                  min: min.toDouble(),
-                  max: max.toDouble(),
-                  divisions: ((max - min) / step).round(),
-                  label: value.toString(),
-                  onChanged: (double newValue) {
-                    // 确保值是step的倍数
-                    final roundedValue = (newValue / step).round() * step;
-                    onChanged(roundedValue);
+                  itemCount: presets.length + 1, // 预设值数量 + 自定义按钮
+                  itemBuilder: (context, index) {
+                    // 最后一个是自定义按钮
+                    if (index == presets.length) {
+                      return _buildOptionButton(
+                        text: '自定义',
+                        isSelected: false,
+                        colorScheme: colorScheme,
+                        isCustom: true,
+                        onTap: () {
+                          _showCustomValueDialog(
+                            context,
+                            min,
+                            max,
+                            step,
+                            value,
+                            onChanged,
+                            suffix ?? '分钟',
+                          );
+                        },
+                      );
+                    }
+                    // 预设值按钮
+                    else {
+                      final preset = presets[index];
+                      final isSelected = value == preset;
+                      return _buildOptionButton(
+                        text: '$preset ${suffix ?? '分钟'}',
+                        isSelected: isSelected,
+                        colorScheme: colorScheme,
+                        onTap: () => onChanged(preset),
+                      );
+                    }
                   },
-                ),
-              ),
-            ),
-            Text(
-              '$max',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
+                );
+              },
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
-  // 显示预设值菜单
-  void _showPresetsMenu(
+  // 显示自定义值对话框
+  void _showCustomValueDialog(
     BuildContext context,
-    List<int> presets,
+    int min,
+    int max,
+    int step,
     int currentValue,
-    Function(int) onChanged,
+    ValueChanged<int> onChanged,
     String unit,
   ) {
+    int inputValue = currentValue;
+    final controller = TextEditingController(text: '$currentValue');
     final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final valueColor = isDarkMode ? Colors.redAccent : colorScheme.primary;
-
-    // 为了在弹出菜单底部添加自定义设置选项，复制一份列表
-    final List<int> menuItems = List.from(presets);
 
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('选择时间'),
-            content: SizedBox(
-              width: double.minPositive,
-              child: ListView(
-                shrinkWrap: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(
+                '输入自定义值',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (var preset in menuItems)
-                    ListTile(
-                      title: Text('$preset $unit'),
-                      selected: preset == currentValue,
-                      selectedTileColor: valueColor.withOpacity(0.1),
-                      selectedColor: valueColor,
-                      dense: true,
-                      onTap: () {
-                        onChanged(preset);
-                        Navigator.of(context).pop();
-                      },
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '输入值',
+                      suffixText: unit,
+                      errorText:
+                          inputValue < min || inputValue > max
+                              ? '请输入${min}到${max}之间的值'
+                              : null,
                     ),
-                  const Divider(),
-                  ListTile(
-                    title: const Text('使用滑块自定义'),
-                    leading: const Icon(Icons.tune),
-                    onTap: () {
-                      Navigator.of(context).pop();
+                    onChanged: (value) {
+                      try {
+                        setState(() {
+                          inputValue = int.parse(value);
+                        });
+                      } catch (_) {}
                     },
                   ),
                 ],
               ),
-            ),
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('取消'),
+                ),
+                TextButton(
+                  onPressed:
+                      inputValue >= min && inputValue <= max
+                          ? () {
+                            onChanged(inputValue);
+                            Navigator.pop(context);
+                          }
+                          : null,
+                  child: Text('确定'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -638,6 +687,89 @@ class _FocusSettingsScreenState extends State<FocusSettingsScreen> {
     // 显示成功消息
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('测试通知已发送'), backgroundColor: Colors.green),
+    );
+  }
+
+  // 构建选项按钮
+  Widget _buildOptionButton({
+    required String text,
+    required bool isSelected,
+    required ColorScheme colorScheme,
+    required VoidCallback onTap,
+    bool isCustom = false,
+  }) {
+    // 检测当前设备方向
+    bool isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    // 横屏时适当调整文字大小
+    double fontSize = isLandscape ? 13.0 : 14.0;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        // 调整内边距使文字在任何方向下都居中
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        alignment: Alignment.center, // 确保内容居中
+        decoration: BoxDecoration(
+          color:
+              isSelected
+                  ? colorScheme.primary
+                  : isCustom
+                  ? colorScheme.primaryContainer.withOpacity(0.5)
+                  : colorScheme.surfaceVariant.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(20),
+          border:
+              isSelected
+                  ? null
+                  : Border.all(
+                    color: colorScheme.primary.withOpacity(0.3),
+                    width: 1,
+                  ),
+        ),
+        child:
+            isCustom
+                // 自定义按钮内容 - 使用FittedBox确保内容适应空间
+                ? FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min, // 确保Row不会拉伸
+                    children: [
+                      Icon(
+                        Icons.add,
+                        size: fontSize + 2, // 图标稍大于文字
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        text,
+                        style: TextStyle(
+                          fontSize: fontSize,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                // 预设值按钮内容 - 使用FittedBox确保文字适应空间
+                : FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color:
+                          isSelected
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+      ),
     );
   }
 }
