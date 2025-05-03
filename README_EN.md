@@ -6,7 +6,7 @@ Welcome to the **TomatoTime** repository! This project aims to implement a time 
 
 ## Table of Contents
 
-Language：1.[中文](https://github.com/YoungLee-coder/TomatoTime/blob/master/README.md) 2.[English](https://github.com/YoungLee-coder/TomatoTime/blob/master/README_EN.md)
+Language：1.[中文](https://github.com/YoungLee-coder/TomatoTime/blob/main/README.md) 2.[English](https://github.com/YoungLee-coder/TomatoTime/blob/main/README_EN.md)
 
 1. [About the Project](#about-the-project)
 2. [Features](#features)
