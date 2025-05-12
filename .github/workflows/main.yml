@@ -1,0 +1,45 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:  # 允许手动触发工作流
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # 设置Java环境
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+      
+      # 设置Flutter环境
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'  # 您可以根据需要调整Flutter版本
+          channel: 'stable'
+      
+      # 获取Flutter依赖
+      - name: Get dependencies
+        run: flutter pub get
+      
+      # 构建APK
+      - name: Build APK
+        run: flutter build apk --release
+      
+      # 上传构建的APK作为工作流程构件
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: tomato-time-app
+          path: build/app/outputs/flutter-apk/app-release.apk
+      
+    
