@@ -13,32 +13,48 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # 设置Java环境
+      # 设置Java环境 - 使用Java 17（与新版Gradle兼容）
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '11'
+          distribution: 'temurin'  # 使用Eclipse Temurin
+          java-version: '17'
       
       # 设置Flutter环境
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.3'  # 更新到2025年可能更新的版本
+          flutter-version: '3.29.3'  # 使用2025年最新的稳定版本
           channel: 'stable'
       
+      # 显示Flutter和Dart版本
+      - name: Check versions
+        run: |
+          flutter --version
+          dart --version
+      
+      # 显示当前目录结构
+      - name: List directory structure
+        run: find . -type f -name "*.gradle" | sort
+
       # 获取Flutter依赖
       - name: Get dependencies
         run: flutter pub get
       
-      # 构建APK
-      - name: Build APK
-        run: flutter build apk --release
+      # 添加诊断信息，确保gradle wrapper有执行权限
+      - name: Grant execute permission to gradlew
+        run: chmod +x android/gradlew
       
-      # 上传构建的APK作为工作流程构件 - 使用v4版本而不是v3
+      # 构建APK（添加更多诊断信息）
+      - name: Build APK
+        run: flutter build apk --release --verbose --stacktrace
+      
+      # 上传构建的APK作为工作流程构件
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: tomato-time-app
           path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error  # 如果找不到APK则报错
       
+     
