@@ -24,7 +24,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'  # 更新到2025年可能更新的版本
+          flutter-version: '3.29.3'  # 更新到2025年可能更新的版本
           channel: 'stable'
       
       # 获取Flutter依赖
