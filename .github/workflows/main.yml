@@ -25,6 +25,9 @@ jobs:
         flutter-version: '3.29.3' # 你可以指定一个具体的版本，例如 '3.10.0'
         channel: 'stable'
 
+    - name: Clear JAVA_TOOL_OPTIONS
+      run: echo "JAVA_TOOL_OPTIONS=" >> $GITHUB_ENV
+
     - name: Get Flutter dependencies
       run: flutter pub get
 
@@ -36,4 +39,3 @@ jobs:
       with:
         name: app-release.apk
         path: build/app/outputs/flutter-apk/app-release.apk
-
