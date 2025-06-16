@@ -41,7 +41,8 @@
 
 ## 安装
 
-前往[Release](https://github.com/YoungLee-coder/TomatoTime/releases/tag/Release)
+HarmonyOS： [AppGallery](https://appgallery.huawei.com/app/detail?id=cn.younglee.tomatotime)
+Android/Windows：[Release](https://github.com/YoungLee-coder/TomatoTime/releases/tag/Release)
 
 ---
 
