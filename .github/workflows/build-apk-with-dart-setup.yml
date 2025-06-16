@@ -45,6 +45,12 @@ jobs:
     - name: 启用 Android 平台
       run: flutter config --enable-android
 
+    # 清理 Gradle 缓存 (解决 JVM 选项问题)
+    - name: 清理 Gradle 缓存
+      run: |
+        rm -rf ~/.gradle/caches/
+        rm -rf ~/.gradle/daemon/
+    
     # 获取依赖
     - name: 获取 Flutter 依赖
       run: flutter pub get
