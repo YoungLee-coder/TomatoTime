@@ -1,4 +1,4 @@
-name: 构建 APK
+name: 构建 APK (使用官方 Dart SDK)
 
 on:
   push:
@@ -25,16 +25,25 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    # 设置 Flutter 环境
-    - name: 设置 Flutter 环境
-      uses: subosito/flutter-action@v2
+    # 设置 Dart SDK (官方 action，支持最新版本)
+    - name: 设置 Dart SDK
+      uses: dart-lang/setup-dart@v1
       with:
-        flutter-version: 'latest'
-        channel: 'stable'
+        sdk: 'stable'
+
+    # 安装 Flutter (通过 Dart SDK)
+    - name: 安装 Flutter
+      run: |
+        git clone https://github.com/flutter/flutter.git -b stable --depth 1
+        echo "$PWD/flutter/bin" >> $GITHUB_PATH
 
     # 检查 Flutter 版本
     - name: 检查 Flutter 版本
       run: flutter --version
+
+    # 启用 Android 平台
+    - name: 启用 Android 平台
+      run: flutter config --enable-android
 
     # 获取依赖
     - name: 获取 Flutter 依赖
@@ -56,7 +65,7 @@ jobs:
     - name: 上传 APK 构建产物
       uses: actions/upload-artifact@v4
       with:
-        name: app-release-${{ github.run_number }}
+        name: 番茄时间-APK-${{ github.run_number }}
         path: build/app/outputs/flutter-apk/app-release.apk
         retention-days: 30
 
